@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestor de Servicios - Juanytours</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-titulo">
+      <span class="logo">🧭</span>
+      <h1>Gestor de Servicios · Juanytours</h1>
+    </div>
+    <button id="boton-nuevo-servicio">+ Nuevo servicio</button>
+  </header>
+
+  <nav class="barra-pestanas" id="barra-pestanas">
+    <button class="pestana activa" data-tab="catalogo">
+      <span class="pestana-texto">📚 Catálogo</span>
+    </button>
+  </nav>
+
+  <div id="mensaje" class="mensaje" hidden></div>
+
+  <main id="contenedor-vistas">
+    <section id="vista-catalogo" class="vista activa" data-tab="catalogo">
+      <div class="subpestanas">
+        <button type="button" class="subpestana activa" data-subtab="servicios">Servicios</button>
+        <button type="button" class="subpestana" data-subtab="apoyo">⚙ Catálogos de apoyo</button>
+      </div>
+
+      <div id="subvista-servicios" class="subvista activa">
+        <div class="tarjeta">
+          <div class="tarjeta-header">
+            <h2>Servicios <span class="badge-conteo" id="conteo-servicios">0 servicios</span></h2>
+            <div class="selector-vista">
+              <button type="button" class="boton-vista activa" data-vista="grid">▦ Cuadrícula</button>
+              <button type="button" class="boton-vista" data-vista="lista">☰ Lista</button>
+            </div>
+          </div>
+          <input type="text" id="buscador-servicios" class="buscador" placeholder="🔍 Buscar por nombre o proveedor..." />
+
+          <div id="grid-servicios" class="grid-servicios"></div>
+
+          <table id="tabla-servicios" hidden>
+            <thead>
+              <tr>
+                <th>Servicio</th>
+                <th>Tipo / Proveedor</th>
+                <th>Estado</th>
+                <th>Tarifas</th>
+                <th>Archivos</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="subvista-apoyo" class="subvista">
+        <div class="grid-2">
+          <div class="tarjeta">
+            <h3>Tipos de servicio</h3>
+            <form id="form-tipo-servicio">
+              <input type="text" name="nombre" placeholder="tour, hotel, vuelo..." required />
+              <button type="submit">Agregar</button>
+            </form>
+            <ul id="lista-tipos-servicio" class="lista-catalogo"></ul>
+          </div>
+
+          <div class="tarjeta">
+            <h3>Proveedores</h3>
+            <form id="form-proveedor">
+              <input type="text" name="nombre" placeholder="Nombre del proveedor" required />
+              <button type="submit">Agregar</button>
+            </form>
+            <ul id="lista-proveedores" class="lista-catalogo"></ul>
+          </div>
+
+          <div class="tarjeta">
+            <h3>Destinos</h3>
+            <form id="form-destino">
+              <input type="text" name="ciudad" placeholder="Ciudad" required />
+              <button type="submit">Agregar</button>
+            </form>
+            <ul id="lista-destinos" class="lista-catalogo"></ul>
+          </div>
+
+          <div class="tarjeta">
+            <h3>Tipos de archivo</h3>
+            <form id="form-tipo-archivo">
+              <input type="text" name="nombre" placeholder="imagen, pdf, contrato..." required />
+              <button type="submit">Agregar</button>
+            </form>
+            <ul id="lista-tipos-archivo" class="lista-catalogo"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

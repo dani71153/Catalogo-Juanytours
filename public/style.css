@@ -1,0 +1,488 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, Arial, sans-serif;
+  background: #f4f5f7;
+  color: #222;
+  margin: 0;
+  padding: 0 0 3rem;
+}
+
+header {
+  background: #1e3a5f;
+  color: white;
+  padding: 0.9rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.header-titulo h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.logo {
+  font-size: 1.4rem;
+}
+
+header button {
+  background: white;
+  color: #1e3a5f;
+  font-weight: 600;
+}
+
+header button:hover {
+  background: #e6e9ee;
+}
+
+/* --- Pestañas --- */
+
+.barra-pestanas {
+  background: white;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0 1rem;
+  overflow-x: auto;
+}
+
+.pestana {
+  background: transparent;
+  color: #555;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.pestana:hover {
+  background: #f4f5f7;
+  color: #222;
+}
+
+.pestana.activa {
+  color: #1e3a5f;
+  border-bottom-color: #1e3a5f;
+  font-weight: 600;
+}
+
+.pestana-cerrar {
+  color: #999;
+  font-size: 0.9rem;
+  padding: 0 0.2rem;
+  border-radius: 3px;
+}
+
+.pestana-cerrar:hover {
+  color: #b02a37;
+  background: #fbe4e4;
+}
+
+/* --- Layout general --- */
+
+main {
+  max-width: 1000px;
+  margin: 1.5rem auto;
+  padding: 0 1rem;
+}
+
+.vista {
+  display: none;
+}
+
+.vista.activa {
+  display: block;
+}
+
+/* --- Subpestañas (dentro de una vista, ej. Catálogo) --- */
+
+.subpestanas {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.subpestana {
+  background: transparent;
+  color: #555;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  padding: 0.5rem 0.8rem;
+}
+
+.subpestana:hover {
+  background: #eef1f5;
+  color: #222;
+}
+
+.subpestana.activa {
+  color: #1e3a5f;
+  border-bottom-color: #1e3a5f;
+  font-weight: 600;
+}
+
+.subvista {
+  display: none;
+}
+
+.subvista.activa {
+  display: block;
+}
+
+.lista-catalogo li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lista-catalogo .vacio {
+  color: #999;
+  font-style: italic;
+}
+
+.eliminar-item {
+  background: none;
+  color: #b02a37;
+  padding: 0 0.4rem;
+  font-size: 1rem;
+  line-height: 1;
+  border-radius: 3px;
+}
+
+.eliminar-item:hover {
+  background: #fbe4e4;
+  color: #7a1c26;
+}
+
+.tarjeta {
+  background: white;
+  border-radius: 8px;
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tarjeta h2 {
+  margin-top: 0;
+}
+
+.tarjeta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.tarjeta-header h2 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.badge-conteo {
+  background: #e6ecf3;
+  color: #1e3a5f;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+}
+
+button.secundario {
+  background: #f0f2f5;
+  color: #333;
+  border: 1px solid #ccc;
+}
+
+/* --- Selector de vista (lista / cuadricula) --- */
+
+.selector-vista {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.boton-vista {
+  background: #f0f2f5;
+  color: #555;
+  border: 1px solid #ccc;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.boton-vista.activa {
+  background: #1e3a5f;
+  color: white;
+  border-color: #1e3a5f;
+}
+
+/* --- Cuadricula de servicios --- */
+
+.grid-servicios {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.grid-servicios:not([hidden]) {
+  display: grid;
+}
+
+.tarjeta-servicio {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.miniatura {
+  aspect-ratio: 4 / 3;
+  background: #eef1f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.miniatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.miniatura-placeholder {
+  font-size: 2.2rem;
+  color: #aaa;
+}
+
+.tarjeta-servicio-cuerpo {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex-grow: 1;
+}
+
+.tarjeta-servicio-nombre {
+  font-weight: 600;
+}
+
+.tarjeta-servicio-precio {
+  color: #1e3a5f;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.tarjeta-servicio-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: auto;
+  padding-top: 0.4rem;
+}
+
+/* --- Campo "escribir y autocompletar" --- */
+
+.autocompletar {
+  position: relative;
+}
+
+.sugerencias {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: -0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+}
+
+.sugerencias li {
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+  border-bottom: none;
+}
+
+.sugerencias li:hover {
+  background: #eef1f5;
+}
+
+button.secundario:hover {
+  background: #e2e5ea;
+}
+
+/* --- Formularios --- */
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  color: #555;
+  margin-bottom: 0.25rem;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+button {
+  background: #1e3a5f;
+  color: white;
+  border: none;
+  padding: 0.55rem 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+button:hover {
+  background: #16456b;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+  align-items: start;
+}
+
+.col-span-2 {
+  grid-column: span 2;
+}
+
+.buscador {
+  margin-bottom: 1rem;
+}
+
+/* --- Tabla --- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.texto-secundario {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.acciones {
+  white-space: nowrap;
+  text-align: right;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+ul li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  background: #e0e0e0;
+}
+
+.badge.activo {
+  background: #d4edda;
+  color: #256029;
+}
+
+.badge.inactivo {
+  background: #f8d7da;
+  color: #842029;
+}
+
+/* --- Mensajes / acciones tipo enlace --- */
+
+.mensaje {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 200;
+}
+
+.mensaje.exito {
+  background: #256029;
+}
+
+.mensaje.error {
+  background: #b02a37;
+}
+
+.enlace-accion {
+  background: none;
+  color: #1e3a5f;
+  text-decoration: underline;
+  padding: 0 0.3rem;
+  font-size: 0.85rem;
+}
+
+.enlace-accion:hover {
+  background: none;
+  color: #16456b;
+}
+
+.enlace-accion.peligro {
+  color: #b02a37;
+}
+
+.enlace-accion.peligro:hover {
+  color: #7a1c26;
+}
+
