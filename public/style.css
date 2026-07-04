@@ -662,15 +662,15 @@ ul li {
 }
 
 .tarjeta-ia-icono {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 12px;
   background: #e8f0fe;
+  color: #2563eb;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.3rem;
 }
 
 .tarjeta-ia-texto {
@@ -702,7 +702,31 @@ ul li {
   background: #eff4ff;
 }
 
+/* Boton "Subir imagen o PDF" con borde punteado (dropzone) */
+.boton-subir-ia {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 2rem;
+  border: 1px dashed #c3ccd8;
+  border-radius: 10px;
+  color: #344054;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  background: white;
+}
+
+.boton-subir-ia:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #f7faff;
+}
+
 .enlace-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   background: none;
   color: #2563eb;
   text-decoration: none;
@@ -767,14 +791,27 @@ ul li {
   padding: 0.4rem;
 }
 
+/* Columna "Acciones" (ultima): centrar el boton de borrar */
+.tabla-tarifas th:last-child,
+.tabla-tarifas td:last-child {
+  text-align: center;
+}
+
 .boton-borrar-fila {
-  background: none;
-  color: #b02a37;
-  padding: 0.3rem 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: #fdeaec;
+  color: #e5484d;
+  border-radius: 8px;
 }
 
 .boton-borrar-fila:hover {
-  background: #fbe4e4;
+  background: #fbd5d9;
+  color: #c62828;
 }
 
 /* --- Zonas de arrastrar y soltar (portada / documentos) --- */
@@ -848,3 +885,11 @@ ul li {
   color: #ccc;
 }
 
+
+/* --- Icono SVG dentro de un titulo (ej. "Tarifas") --- */
+
+.icono-titulo {
+  color: #2563eb;
+  vertical-align: -4px;
+  margin-right: 0.2rem;
+}

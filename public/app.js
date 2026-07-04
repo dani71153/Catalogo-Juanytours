@@ -7,6 +7,21 @@ let defectosIncluidos = [];
 let defectosNoIncluidos = [];
 let listaPaises = [];
 
+// Icono de basurero (lineas, hereda el color del boton con currentColor).
+const ICONO_BASURERO = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+
+// Icono de etiqueta de precio (para el titulo "Tarifas").
+const ICONO_ETIQUETA = `<svg class="icono-titulo" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>`;
+
+// Icono de subir (flecha hacia arriba con bandeja).
+const ICONO_SUBIR = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`;
+
+// Icono de informacion (circulo con "i").
+const ICONO_INFO = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+
+// Icono de robot (para la tarjeta "Extraer datos con IA").
+const ICONO_ROBOT = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"></rect><path d="M12 8V4"></path><circle cx="12" cy="3" r="1"></circle><line x1="8.5" y1="13" x2="8.5" y2="15"></line><line x1="15.5" y1="13" x2="15.5" y2="15"></line></svg>`;
+
 // --- Mensajes de exito / error ---
 
 let temporizadorMensaje = null;
@@ -206,8 +221,12 @@ async function crearDesdeAutocompletar(campoId, texto, input, inputOculto) {
 // una, la selecciona y guarda su id en el input oculto. Si lo escrito no
 // coincide con nada, ofrece un "+ Agregar" para crearlo sin salir de aqui.
 function conectarAutocompletarCampo(input, campoId) {
-  const inputOculto = input.nextElementSibling; // el input hidden va justo despues en el HTML
-  const lista = inputOculto.nextElementSibling; // y la <ul class="sugerencias"> despues del hidden
+  // Se buscan por selector dentro del contenedor (no por nextElementSibling)
+  // porque algunos campos, como Destino, intercalan otros elementos (el icono
+  // de pin) entre el input y la lista de sugerencias.
+  const contenedor = input.closest('.autocompletar');
+  const inputOculto = contenedor.querySelector('input[type="hidden"]');
+  const lista = contenedor.querySelector('.sugerencias');
 
   function mostrarSugerencias() {
     const texto = input.value.trim();
@@ -854,7 +873,9 @@ let contadorFormulariosServicio = 0;
 
 function plantillaServicio(servicio) {
   const esNuevo = !servicio;
-  const idFormularioServicio = `form-servicio-${contadorFormulariosServicio++}`;
+  const sufijoFormularios = contadorFormulariosServicio++;
+  const idFormularioServicio = `form-servicio-${sufijoFormularios}`;
+  const idFormularioTarifa = `form-tarifa-${sufijoFormularios}`;
 
   return `
     <div class="subpestanas-servicio">
@@ -869,17 +890,17 @@ function plantillaServicio(servicio) {
         esNuevo
           ? `
       <div class="tarjeta tarjeta-ia">
-        <div class="tarjeta-ia-icono">🤖</div>
+        <div class="tarjeta-ia-icono">${ICONO_ROBOT}</div>
         <div class="tarjeta-ia-texto">
           <h3>Extraer datos con IA</h3>
-          <p class="texto-secundario">Sube una foto o afiche del servicio y la IA completará automáticamente los campos de abajo (podrás revisarlos antes de guardar).</p>
+          <p class="texto-secundario">Sube una foto o un PDF y la IA completará automáticamente los campos relevantes del servicio.</p>
         </div>
         <div class="tarjeta-ia-acciones">
-          <label class="boton boton-outline">
-            ⬆ Subir imagen
+          <label class="boton-subir-ia">
+            ${ICONO_SUBIR} Subir imagen o PDF
             <input type="file" class="campo-imagen-ia" accept="image/*" hidden />
           </label>
-          <button type="button" class="enlace-info boton-info-ia">Más información ⓘ</button>
+          <button type="button" class="enlace-info boton-info-ia">Más información ${ICONO_INFO}</button>
         </div>
       </div>
       <p class="texto-secundario estado-extraccion-ia"></p>
@@ -959,11 +980,12 @@ function plantillaServicio(servicio) {
       <div class="tarjeta">
         <div class="tarjeta-header">
           <div>
-            <h3>🏷 Tarifas</h3>
+            <h3>${ICONO_ETIQUETA} Tarifas</h3>
             <p class="texto-secundario">Define las tarifas disponibles para este servicio.</p>
           </div>
+          <button type="submit" form="${idFormularioTarifa}">+ Agregar tarifa</button>
         </div>
-        <form class="form-tarifa">
+        <form class="form-tarifa" id="${idFormularioTarifa}">
           <table class="tabla-tarifas">
             <thead>
               <tr>
@@ -985,7 +1007,7 @@ function plantillaServicio(servicio) {
                     <option value="inactivo">🔴 Inactivo</option>
                   </select>
                 </td>
-                <td><button type="submit" class="boton-outline">+ Agregar</button></td>
+                <td><button type="reset" class="boton-borrar-fila" title="Limpiar esta fila">${ICONO_BASURERO}</button></td>
               </tr>
             </tbody>
             <tbody class="lista-tarifas"></tbody>
@@ -1102,7 +1124,7 @@ async function cargarTarifas(seccion, idServicio) {
           <td>${t.precio_base}</td>
           <td>${t.moneda || ''}</td>
           <td><span class="badge ${t.estado}">${t.estado || '-'}</span></td>
-          <td><button type="button" class="boton-borrar-fila eliminar-item" data-id="${t.id_tarifa}">🗑</button></td>
+          <td><button type="button" class="boton-borrar-fila eliminar-item" data-id="${t.id_tarifa}" title="Eliminar tarifa">${ICONO_BASURERO}</button></td>
         </tr>
       `
     )
