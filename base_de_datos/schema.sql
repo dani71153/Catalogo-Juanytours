@@ -28,7 +28,9 @@ CREATE TABLE servicios (
   id_destino INTEGER,
   nombre TEXT NOT NULL,
   descripcion TEXT,
-  duracion TEXT,
+  fecha_inicio TEXT, -- YYYY-MM-DD
+  fecha_fin TEXT, -- YYYY-MM-DD
+  duracion TEXT, -- se calcula solo a partir de fecha_inicio y fecha_fin
   estado TEXT,
   FOREIGN KEY (id_tipo_servicio) REFERENCES tipos_servicio(id_tipo_servicio),
   FOREIGN KEY (id_proveedor) REFERENCES proveedores(id_proveedor),
@@ -96,4 +98,24 @@ CREATE TABLE servicio_archivos (
   uso TEXT, -- portada, galeria, documento, condiciones
   FOREIGN KEY (id_servicio) REFERENCES servicios(id_servicio),
   FOREIGN KEY (id_archivo) REFERENCES archivos(id_archivo)
+);
+
+-- Valores por defecto que se pueden copiar a un servicio nuevo (opcional,
+-- via un checkbox al crearlo) para no tener que escribirlos uno a uno.
+
+CREATE TABLE incluidos_defecto (
+  id_incluido_defecto INTEGER PRIMARY KEY AUTOINCREMENT,
+  descripcion TEXT NOT NULL
+);
+
+CREATE TABLE no_incluidos_defecto (
+  id_no_incluido_defecto INTEGER PRIMARY KEY AUTOINCREMENT,
+  descripcion TEXT NOT NULL
+);
+
+CREATE TABLE condiciones_defecto (
+  id_condicion_defecto INTEGER PRIMARY KEY AUTOINCREMENT,
+  politica_cancelacion TEXT,
+  requisitos TEXT,
+  notas TEXT
 );

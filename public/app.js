@@ -3,6 +3,9 @@ let catalogoTipos = [];
 let catalogoProveedores = [];
 let catalogoDestinos = [];
 let catalogoTiposArchivo = [];
+let defectosIncluidos = [];
+let defectosNoIncluidos = [];
+let listaPaises = [];
 
 // --- Mensajes de exito / error ---
 
@@ -18,6 +21,14 @@ function mostrarMensaje(texto, tipo) {
   temporizadorMensaje = setTimeout(() => {
     el.hidden = true;
   }, 3500);
+}
+
+// Usado por tarifas/condiciones/incluidos/archivos: esas secciones necesitan
+// que el servicio ya tenga un id real (no sirven mientras esta sin guardar).
+function requiereServicioGuardado(idServicioActual) {
+  if (idServicioActual) return false;
+  mostrarMensaje('Guarda el servicio primero (pestaña "Información básica").', 'error');
+  return true;
 }
 
 // --- Helpers de red ---
@@ -58,16 +69,33 @@ function datosFormulario(form) {
   return data;
 }
 
-// Busca en el catalogo el registro cuyo nombre coincide exactamente (sin
+// Texto que se muestra (y se compara al escribir) para un registro de
+// catalogo. Los destinos combinan ciudad y pais; el resto usa su "nombre".
+function textoDeItem(campoId, item) {
+  if (campoId === 'id_destino') return [item.ciudad, item.pais].filter(Boolean).join(', ');
+  return item.nombre;
+}
+
+// Busca en el catalogo el registro cuyo texto coincide exactamente (sin
 // distinguir mayusculas) con lo que el usuario escribio, y devuelve su id.
-function buscarIdPorTexto(catalogo, campoId, campoTexto, texto) {
-  const encontrado = catalogo.find((item) => item[campoTexto].toLowerCase() === texto.trim().toLowerCase());
+function buscarIdPorTexto(catalogo, campoId, texto) {
+  const encontrado = catalogo.find((item) => textoDeItem(campoId, item).toLowerCase() === texto.trim().toLowerCase());
   return encontrado ? String(encontrado[campoId]) : '';
 }
 
-function valorMostrado(catalogo, campoId, campoTexto, id) {
+// Calcula la duracion en dias a partir de las fechas de inicio y fin
+// (ambas fechas cuentan, por eso se le suma 1: 10 al 12 = 3 dias).
+function calcularDuracionTexto(fechaInicio, fechaFin) {
+  if (!fechaInicio || !fechaFin) return '';
+
+  const dias = Math.round((new Date(fechaFin) - new Date(fechaInicio)) / 86400000) + 1;
+  if (dias <= 0) return 'Verifica las fechas';
+  return dias === 1 ? '1 día' : `${dias} días`;
+}
+
+function valorMostrado(catalogo, campoId, id) {
   const encontrado = catalogo.find((item) => String(item[campoId]) === String(id));
-  return encontrado ? encontrado[campoTexto] : '';
+  return encontrado ? textoDeItem(campoId, encontrado) : '';
 }
 
 // --- Catalogos de apoyo (cache global, usado por todas las pestañas) ---
@@ -81,17 +109,33 @@ async function cargarCatalogos() {
       obtenerJSON('/tipos-archivo'),
     ]);
     renderizarListasCatalogo();
+    poblarFiltros();
   } catch (error) {
     mostrarMensaje(error.message, 'error');
   }
 }
 
-function campo(form, nombre) {
-  return form.querySelector(`[name="${nombre}"]`);
+// Llena un <select> de filtro conservando la opcion elegida si sigue existiendo.
+function llenarSelectFiltro(select, opciones, campoId, textoDe) {
+  const valorActual = select.value;
+  select.innerHTML = '<option value="">Todos</option>';
+  opciones.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item[campoId];
+    option.textContent = textoDe(item);
+    select.appendChild(option);
+  });
+  select.value = valorActual;
 }
 
-function campoDeTexto(form, campoId) {
-  return form.querySelector(`[data-campo="${campoId}"]`);
+function poblarFiltros() {
+  llenarSelectFiltro(document.getElementById('filtro-tipo'), catalogoTipos, 'id_tipo_servicio', (t) => t.nombre);
+  llenarSelectFiltro(document.getElementById('filtro-proveedor'), catalogoProveedores, 'id_proveedor', (p) => p.nombre);
+  llenarSelectFiltro(document.getElementById('filtro-destino'), catalogoDestinos, 'id_destino', (d) => textoDeItem('id_destino', d));
+}
+
+function campo(form, nombre) {
+  return form.querySelector(`[name="${nombre}"]`);
 }
 
 // Devuelve el catalogo (siempre actualizado) que corresponde a cada campo.
@@ -103,32 +147,19 @@ function catalogoActualPara(campoId) {
   return [];
 }
 
-// Los 4 campos "escribir y autocompletar" del formulario de servicio/archivo,
-// cada uno con: input de texto visible (con data-campo), input oculto con el
-// id real (name) y una lista <ul> propia para mostrar las sugerencias.
-function configuracionCamposAutocompletar(formServicio, formArchivo) {
-  const config = [
-    { input: campoDeTexto(formServicio, 'id_tipo_servicio'), campoId: 'id_tipo_servicio', campoTexto: 'nombre' },
-    { input: campoDeTexto(formServicio, 'id_proveedor'), campoId: 'id_proveedor', campoTexto: 'nombre' },
-    { input: campoDeTexto(formServicio, 'id_destino'), campoId: 'id_destino', campoTexto: 'ciudad' },
-  ];
-  if (formArchivo) {
-    config.push({ input: campoDeTexto(formArchivo, 'id_tipo_archivo'), campoId: 'id_tipo_archivo', campoTexto: 'nombre' });
-  }
-  return config;
-}
-
 // Conecta un campo de texto con su lista de sugerencias: al escribir o
 // enfocar, filtra el catalogo y muestra las coincidencias; al hacer clic en
 // una, la selecciona y guarda su id en el input oculto.
-function conectarAutocompletarCampo(input, campoId, campoTexto) {
+function conectarAutocompletarCampo(input, campoId) {
   const inputOculto = input.nextElementSibling; // el input hidden va justo despues en el HTML
   const lista = inputOculto.nextElementSibling; // y la <ul class="sugerencias"> despues del hidden
 
   function mostrarSugerencias() {
     const texto = input.value.trim().toLowerCase();
     const catalogo = catalogoActualPara(campoId);
-    const coincidencias = texto ? catalogo.filter((item) => item[campoTexto].toLowerCase().includes(texto)) : catalogo;
+    const coincidencias = texto
+      ? catalogo.filter((item) => textoDeItem(campoId, item).toLowerCase().includes(texto))
+      : catalogo;
 
     if (coincidencias.length === 0) {
       lista.hidden = true;
@@ -137,14 +168,14 @@ function conectarAutocompletarCampo(input, campoId, campoTexto) {
     }
 
     lista.innerHTML = coincidencias
-      .map((item) => `<li data-id="${item[campoId]}" data-texto="${item[campoTexto]}">${item[campoTexto]}</li>`)
+      .map((item) => `<li data-id="${item[campoId]}" data-texto="${textoDeItem(campoId, item)}">${textoDeItem(campoId, item)}</li>`)
       .join('');
     lista.hidden = false;
   }
 
   input.addEventListener('focus', mostrarSugerencias);
   input.addEventListener('input', () => {
-    inputOculto.value = buscarIdPorTexto(catalogoActualPara(campoId), campoId, campoTexto, input.value);
+    inputOculto.value = buscarIdPorTexto(catalogoActualPara(campoId), campoId, input.value);
     mostrarSugerencias();
   });
 
@@ -164,19 +195,62 @@ function conectarAutocompletarCampo(input, campoId, campoTexto) {
   });
 }
 
-function inicializarAutocompletarServicio(formServicio, formArchivo) {
-  configuracionCamposAutocompletar(formServicio, formArchivo).forEach(({ input, campoId, campoTexto }) => {
-    conectarAutocompletarCampo(input, campoId, campoTexto);
+// Autocompletar simple para campos que no guardan un id, solo texto libre
+// (ej. el pais de un destino): la sugerencia elegida se copia tal cual al input.
+// alSeleccionar (opcional) se llama con el texto elegido, tanto al hacer
+// clic en una sugerencia como al escribirlo manualmente y salir del campo.
+function conectarAutocompletarTexto(input, obtenerOpciones, alSeleccionar) {
+  const lista = input.nextElementSibling;
+
+  function mostrarSugerencias() {
+    const texto = input.value.trim().toLowerCase();
+    const opciones = obtenerOpciones();
+    const coincidencias = texto ? opciones.filter((o) => o.toLowerCase().includes(texto)) : opciones;
+
+    if (coincidencias.length === 0) {
+      lista.hidden = true;
+      lista.innerHTML = '';
+      return;
+    }
+
+    lista.innerHTML = coincidencias.map((o) => `<li data-texto="${o}">${o}</li>`).join('');
+    lista.hidden = false;
+  }
+
+  input.addEventListener('focus', mostrarSugerencias);
+  input.addEventListener('input', mostrarSugerencias);
+
+  lista.addEventListener('mousedown', (e) => {
+    const li = e.target.closest('li');
+    if (!li) return;
+    e.preventDefault();
+    input.value = li.dataset.texto;
+    lista.hidden = true;
+    alSeleccionar?.(input.value);
+  });
+
+  input.addEventListener('blur', () => {
+    lista.hidden = true;
+    alSeleccionar?.(input.value);
   });
 }
 
-function manejarFormularioCatalogo(idFormulario, url) {
+// Conecta todos los campos "escribir y autocompletar" que haya dentro de la
+// pestaña del servicio (pueden ser varios: tipo, proveedor, destino, y el
+// tipo de archivo tanto en la subpestaña de portada como en Documentos).
+function inicializarAutocompletarServicio(seccion) {
+  seccion.querySelectorAll('.campo-autocompletar').forEach((input) => {
+    conectarAutocompletarCampo(input, input.dataset.campo);
+  });
+}
+
+function manejarFormularioCatalogo(idFormulario, url, alRecargar = cargarCatalogos) {
   document.getElementById(idFormulario).addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
       await enviarJSON(url, 'POST', datosFormulario(e.target));
       e.target.reset();
-      await cargarCatalogos();
+      await alRecargar();
       mostrarMensaje('Agregado correctamente', 'exito');
     } catch (error) {
       mostrarMensaje(error.message, 'error');
@@ -188,6 +262,95 @@ manejarFormularioCatalogo('form-tipo-servicio', '/tipos-servicio');
 manejarFormularioCatalogo('form-proveedor', '/proveedores');
 manejarFormularioCatalogo('form-destino', '/destinos');
 manejarFormularioCatalogo('form-tipo-archivo', '/tipos-archivo');
+
+// --- Valores por defecto para servicios nuevos ---
+
+async function cargarDefectos() {
+  try {
+    [defectosIncluidos, defectosNoIncluidos] = await Promise.all([
+      obtenerJSON('/incluidos-defecto'),
+      obtenerJSON('/no-incluidos-defecto'),
+    ]);
+    document.getElementById('lista-incluidos-defecto').innerHTML = listaOVacio(
+      defectosIncluidos,
+      (i) => i.descripcion,
+      'incluidos-defecto',
+      'id_incluido_defecto'
+    );
+    document.getElementById('lista-no-incluidos-defecto').innerHTML = listaOVacio(
+      defectosNoIncluidos,
+      (i) => i.descripcion,
+      'no-incluidos-defecto',
+      'id_no_incluido_defecto'
+    );
+
+    const condicionesDefecto = await obtenerJSON('/condiciones-defecto');
+    const formCondicionesDefecto = document.getElementById('form-condiciones-defecto');
+    campo(formCondicionesDefecto, 'politica_cancelacion').value = condicionesDefecto?.politica_cancelacion || '';
+    campo(formCondicionesDefecto, 'requisitos').value = condicionesDefecto?.requisitos || '';
+    campo(formCondicionesDefecto, 'notas').value = condicionesDefecto?.notas || '';
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  }
+}
+
+manejarFormularioCatalogo('form-incluido-defecto', '/incluidos-defecto', cargarDefectos);
+manejarFormularioCatalogo('form-no-incluido-defecto', '/no-incluidos-defecto', cargarDefectos);
+
+// --- Lista de paises (para elegir el pais de un destino sin escribirlo completo) ---
+
+async function cargarPaises() {
+  try {
+    listaPaises = await obtenerJSON('/paises');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  }
+}
+
+// --- Ciudades del pais elegido (para elegir la ciudad sin escribirla completa) ---
+
+let ciudadesPorPais = {};
+
+async function obtenerCiudadesDePais(pais) {
+  if (!pais) return [];
+  if (!ciudadesPorPais[pais]) {
+    try {
+      ciudadesPorPais[pais] = await obtenerJSON(`/ciudades?pais=${encodeURIComponent(pais)}`);
+    } catch (error) {
+      ciudadesPorPais[pais] = [];
+    }
+  }
+  return ciudadesPorPais[pais];
+}
+
+const inputPaisDestino = document.querySelector('#form-destino .campo-pais');
+const inputCiudadDestino = document.querySelector('#form-destino .campo-ciudad');
+
+// Al elegir/escribir el pais, se precargan sus ciudades para que ya esten
+// listas cuando el usuario pase al campo de ciudad.
+conectarAutocompletarTexto(inputPaisDestino, () => listaPaises, obtenerCiudadesDePais);
+conectarAutocompletarTexto(inputCiudadDestino, () => ciudadesPorPais[inputPaisDestino.value] || []);
+
+document.getElementById('form-condiciones-defecto').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    await enviarJSON('/condiciones-defecto', 'POST', datosFormulario(e.target));
+    mostrarMensaje('Plantilla de condiciones guardada', 'exito');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  }
+});
+
+document.getElementById('boton-eliminar-condiciones-defecto').addEventListener('click', async () => {
+  if (!confirm('¿Eliminar la plantilla de condiciones por defecto?')) return;
+  try {
+    await fetch('/condiciones-defecto', { method: 'DELETE' });
+    document.getElementById('form-condiciones-defecto').reset();
+    mostrarMensaje('Plantilla eliminada', 'exito');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  }
+});
 
 // --- Subpestaña "Catálogos de apoyo": listas de lo ya registrado ---
 
@@ -246,7 +409,7 @@ document.getElementById('subvista-apoyo').addEventListener('click', async (e) =>
       throw new Error(cuerpo.error || `No se pudo eliminar (código ${respuesta.status})`);
     }
     mostrarMensaje('Eliminado correctamente', 'exito');
-    await cargarCatalogos();
+    await Promise.all([cargarCatalogos(), cargarDefectos()]);
   } catch (error) {
     mostrarMensaje(error.message, 'error');
   }
@@ -317,7 +480,7 @@ let vistaActualServicios = 'grid';
 async function cargarServicios() {
   try {
     serviciosCache = await obtenerJSON('/servicios');
-    renderizarServicios(serviciosCache);
+    aplicarFiltrosYBusqueda();
   } catch (error) {
     mostrarMensaje(error.message, 'error');
   }
@@ -327,6 +490,7 @@ async function cargarServicios() {
 // sin importar si el elemento viene de la tabla o de la cuadricula.
 function conectarAccionesServicio(elemento, servicio) {
   elemento.querySelector('.boton-abrir').addEventListener('click', () => abrirServicio(servicio.id_servicio));
+  elemento.querySelector('.boton-ficha').addEventListener('click', () => window.open(`ficha.html?id=${servicio.id_servicio}`, '_blank'));
   elemento.querySelector('.boton-archivar').addEventListener('click', () => alternarArchivado(servicio));
   elemento.querySelector('.boton-eliminar').addEventListener('click', () => eliminarServicioDesdeTabla(servicio));
 }
@@ -334,6 +498,7 @@ function conectarAccionesServicio(elemento, servicio) {
 function botonesAccionServicio(servicio) {
   return `
     <button type="button" class="enlace-accion boton-abrir">Abrir</button>
+    <button type="button" class="enlace-accion boton-ficha">📄 Ficha</button>
     <button type="button" class="enlace-accion boton-archivar">${servicio.estado === 'activo' ? 'Archivar' : 'Reactivar'}</button>
     <button type="button" class="enlace-accion peligro boton-eliminar">Eliminar</button>
   `;
@@ -405,12 +570,73 @@ function renderizarGridServicios(lista) {
   });
 }
 
-document.getElementById('buscador-servicios').addEventListener('input', (e) => {
-  const texto = e.target.value.trim().toLowerCase();
-  const filtrados = serviciosCache.filter(
-    (s) => s.nombre.toLowerCase().includes(texto) || (s.nombre_proveedor || '').toLowerCase().includes(texto)
-  );
-  renderizarServicios(filtrados);
+// --- Buscador + panel de filtros ---
+
+function obtenerFiltrosActuales() {
+  return {
+    texto: document.getElementById('buscador-servicios').value.trim().toLowerCase(),
+    tipo: document.getElementById('filtro-tipo').value,
+    proveedor: document.getElementById('filtro-proveedor').value,
+    destino: document.getElementById('filtro-destino').value,
+    estado: document.getElementById('filtro-estado').value,
+    fechaDesde: document.getElementById('filtro-fecha-desde').value,
+    fechaHasta: document.getElementById('filtro-fecha-hasta').value,
+    precioMin: document.getElementById('filtro-precio-min').value,
+    precioMax: document.getElementById('filtro-precio-max').value,
+  };
+}
+
+function servicioCumpleFiltros(servicio, filtros) {
+  if (
+    filtros.texto &&
+    !servicio.nombre.toLowerCase().includes(filtros.texto) &&
+    !(servicio.nombre_proveedor || '').toLowerCase().includes(filtros.texto)
+  ) {
+    return false;
+  }
+  if (filtros.tipo && String(servicio.id_tipo_servicio) !== filtros.tipo) return false;
+  if (filtros.proveedor && String(servicio.id_proveedor) !== filtros.proveedor) return false;
+  if (filtros.destino && String(servicio.id_destino) !== filtros.destino) return false;
+  if (filtros.estado && servicio.estado !== filtros.estado) return false;
+  if (filtros.fechaDesde && (!servicio.fecha_inicio || servicio.fecha_inicio < filtros.fechaDesde)) return false;
+  if (filtros.fechaHasta && (!servicio.fecha_fin || servicio.fecha_fin > filtros.fechaHasta)) return false;
+  if (filtros.precioMin && (servicio.tarifa_desde_precio == null || servicio.tarifa_desde_precio < Number(filtros.precioMin))) {
+    return false;
+  }
+  if (filtros.precioMax && (servicio.tarifa_desde_precio == null || servicio.tarifa_desde_precio > Number(filtros.precioMax))) {
+    return false;
+  }
+  return true;
+}
+
+function aplicarFiltrosYBusqueda() {
+  const filtros = obtenerFiltrosActuales();
+  const hayFiltrosActivos = Object.entries(filtros).some(([clave, valor]) => clave !== 'texto' && valor !== '');
+  document.getElementById('boton-filtros').classList.toggle('activa', hayFiltrosActivos);
+
+  renderizarServicios(serviciosCache.filter((s) => servicioCumpleFiltros(s, filtros)));
+}
+
+document.getElementById('buscador-servicios').addEventListener('input', aplicarFiltrosYBusqueda);
+
+['filtro-tipo', 'filtro-proveedor', 'filtro-destino', 'filtro-estado', 'filtro-fecha-desde', 'filtro-fecha-hasta', 'filtro-precio-min', 'filtro-precio-max'].forEach(
+  (id) => document.getElementById(id).addEventListener('input', aplicarFiltrosYBusqueda)
+);
+
+document.getElementById('boton-filtros').addEventListener('click', () => {
+  document.getElementById('panel-filtros').hidden = !document.getElementById('panel-filtros').hidden;
+});
+
+document.getElementById('boton-limpiar-filtros').addEventListener('click', () => {
+  document.getElementById('filtro-tipo').value = '';
+  document.getElementById('filtro-proveedor').value = '';
+  document.getElementById('filtro-destino').value = '';
+  document.getElementById('filtro-estado').value = '';
+  document.getElementById('filtro-fecha-desde').value = '';
+  document.getElementById('filtro-fecha-hasta').value = '';
+  document.getElementById('filtro-precio-min').value = '';
+  document.getElementById('filtro-precio-max').value = '';
+  aplicarFiltrosYBusqueda();
 });
 
 document.querySelectorAll('.boton-vista').forEach((boton) => {
@@ -455,80 +681,126 @@ async function eliminarServicioDesdeTabla(servicio) {
 function plantillaServicio(servicio) {
   const esNuevo = !servicio;
   return `
-    <div class="tarjeta">
-      <h2>${esNuevo ? 'Nuevo servicio' : 'Datos del servicio'}</h2>
-      <form class="form-servicio grid-2">
-        <div class="autocompletar">
-          <label>Tipo de servicio</label>
-          <input type="text" class="campo-autocompletar" data-campo="id_tipo_servicio" placeholder="Escribe o elige un tipo" autocomplete="off" required />
-          <input type="hidden" name="id_tipo_servicio" />
-          <ul class="sugerencias" hidden></ul>
-        </div>
-        <div class="autocompletar">
-          <label>Proveedor</label>
-          <input type="text" class="campo-autocompletar" data-campo="id_proveedor" placeholder="Escribe o elige un proveedor" autocomplete="off" required />
-          <input type="hidden" name="id_proveedor" />
-          <ul class="sugerencias" hidden></ul>
-        </div>
-        <div class="autocompletar">
-          <label>Destino (opcional)</label>
-          <input type="text" class="campo-autocompletar" data-campo="id_destino" placeholder="Escribe o elige un destino" autocomplete="off" />
-          <input type="hidden" name="id_destino" />
-          <ul class="sugerencias" hidden></ul>
-        </div>
-        <div>
-          <label>Nombre</label>
-          <input type="text" name="nombre" required value="${servicio?.nombre ?? ''}" />
-        </div>
-        <div class="col-span-2">
-          <label>Descripción</label>
-          <textarea name="descripcion">${servicio?.descripcion ?? ''}</textarea>
-        </div>
-        <div>
-          <label>Duración</label>
-          <input type="text" name="duracion" value="${servicio?.duracion ?? ''}" />
-        </div>
-        <div>
-          <label>Estado</label>
-          <select name="estado">
-            <option value="activo">activo</option>
-            <option value="inactivo">inactivo</option>
-          </select>
-        </div>
-        <div class="col-span-2">
-          <button type="submit">${esNuevo ? 'Guardar servicio' : 'Actualizar servicio'}</button>
-        </div>
-      </form>
+    <div class="subpestanas-servicio">
+      <button type="button" class="subpestana-servicio activa" data-subtab-servicio="info">Información básica</button>
+      <button type="button" class="subpestana-servicio" data-subtab-servicio="condiciones">Condiciones</button>
+      <button type="button" class="subpestana-servicio" data-subtab-servicio="incluye">Incluye / No incluye</button>
+      <button type="button" class="subpestana-servicio" data-subtab-servicio="documentos">Documentos</button>
     </div>
 
-    <div class="secciones-relacionadas" ${esNuevo ? 'hidden' : ''}>
-      <div class="grid-2">
-        <div class="tarjeta">
-          <h3>Tarifas</h3>
-          <form class="form-tarifa grid-2">
-            <input type="text" name="nombre_tarifa" placeholder="Nombre tarifa (adulto, niño...)" required />
-            <input type="number" step="0.01" name="precio_base" placeholder="Precio" required />
-            <input type="text" name="moneda" placeholder="USD, DOP..." />
+    <div class="subvista-servicio activa" data-subtab-servicio-contenido="info">
+      <div class="tarjeta">
+        <h3>Imagen de portada</h3>
+        <form class="form-portada portada-fila">
+          <label class="portada-actual" title="Clic para elegir una imagen">
+            <span class="portada-preview"><span class="miniatura-placeholder">🖼</span></span>
+            <input type="file" name="archivo" accept="image/*" required hidden />
+          </label>
+          <div class="portada-campos">
+            <span class="portada-archivo-nombre texto-secundario">Ningún archivo elegido</span>
+            <div class="autocompletar">
+              <input type="text" class="campo-autocompletar" data-campo="id_tipo_archivo" placeholder="Tipo de archivo (imagen...)" autocomplete="off" required />
+              <input type="hidden" name="id_tipo_archivo" />
+              <ul class="sugerencias" hidden></ul>
+            </div>
+            <button type="submit">Subir portada</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="tarjeta">
+        <h2>${esNuevo ? 'Nuevo servicio' : 'Datos del servicio'}</h2>
+        <form class="form-servicio grid-2">
+          <div class="autocompletar">
+            <label>Tipo de servicio</label>
+            <input type="text" class="campo-autocompletar" data-campo="id_tipo_servicio" placeholder="Escribe o elige un tipo" autocomplete="off" required />
+            <input type="hidden" name="id_tipo_servicio" />
+            <ul class="sugerencias" hidden></ul>
+          </div>
+          <div class="autocompletar">
+            <label>Proveedor</label>
+            <input type="text" class="campo-autocompletar" data-campo="id_proveedor" placeholder="Escribe o elige un proveedor" autocomplete="off" required />
+            <input type="hidden" name="id_proveedor" />
+            <ul class="sugerencias" hidden></ul>
+          </div>
+          <div class="autocompletar">
+            <label>Destino (opcional)</label>
+            <input type="text" class="campo-autocompletar" data-campo="id_destino" placeholder="Escribe o elige un destino" autocomplete="off" />
+            <input type="hidden" name="id_destino" />
+            <ul class="sugerencias" hidden></ul>
+          </div>
+          <div>
+            <label>Nombre</label>
+            <input type="text" name="nombre" required value="${servicio?.nombre ?? ''}" />
+          </div>
+          <div class="col-span-2">
+            <label>Descripción</label>
+            <textarea name="descripcion">${servicio?.descripcion ?? ''}</textarea>
+          </div>
+          <div>
+            <label>Fecha de inicio</label>
+            <input type="date" name="fecha_inicio" value="${servicio?.fecha_inicio ?? ''}" />
+          </div>
+          <div>
+            <label>Fecha de fin</label>
+            <input type="date" name="fecha_fin" value="${servicio?.fecha_fin ?? ''}" />
+          </div>
+          <div>
+            <label>Duración (calculada)</label>
+            <input type="text" name="duracion" value="${servicio?.duracion ?? ''}" readonly />
+          </div>
+          <div>
+            <label>Estado</label>
             <select name="estado">
               <option value="activo">activo</option>
               <option value="inactivo">inactivo</option>
             </select>
-            <button type="submit" class="col-span-2">Agregar tarifa</button>
-          </form>
-          <ul class="lista-tarifas"></ul>
-        </div>
-
-        <div class="tarjeta">
-          <h3>Condiciones</h3>
-          <form class="form-condiciones">
-            <textarea name="politica_cancelacion" placeholder="Política de cancelación"></textarea>
-            <textarea name="requisitos" placeholder="Requisitos"></textarea>
-            <textarea name="notas" placeholder="Notas"></textarea>
-            <button type="submit">Guardar condiciones</button>
-          </form>
-        </div>
+          </div>
+          ${
+            esNuevo
+              ? `
+            <div class="col-span-2 casilla-defectos">
+              <label><input type="checkbox" name="usar_defectos" value="si" checked /> Usar valores por defecto (incluye, no incluye y condiciones)</label>
+            </div>
+          `
+              : ''
+          }
+          <div class="col-span-2">
+            <button type="submit">${esNuevo ? 'Guardar servicio' : 'Actualizar servicio'}</button>
+          </div>
+        </form>
       </div>
 
+      <div class="tarjeta">
+        <h3>Tarifas</h3>
+        <form class="form-tarifa grid-2">
+          <input type="text" name="nombre_tarifa" placeholder="Nombre tarifa (adulto, niño...)" required />
+          <input type="number" step="0.01" name="precio_base" placeholder="Precio" required />
+          <input type="text" name="moneda" placeholder="USD, DOP..." />
+          <select name="estado">
+            <option value="activo">activo</option>
+            <option value="inactivo">inactivo</option>
+          </select>
+          <button type="submit" class="col-span-2">Agregar tarifa</button>
+        </form>
+        <ul class="lista-tarifas"></ul>
+      </div>
+    </div>
+
+    <div class="subvista-servicio" data-subtab-servicio-contenido="condiciones">
+      <div class="tarjeta">
+        <h3>Condiciones</h3>
+        <form class="form-condiciones">
+          <textarea name="politica_cancelacion" placeholder="Política de cancelación"></textarea>
+          <textarea name="requisitos" placeholder="Requisitos"></textarea>
+          <textarea name="notas" placeholder="Notas"></textarea>
+          <button type="submit">Guardar condiciones</button>
+          <button type="button" class="secundario boton-eliminar-condiciones">Eliminar condiciones</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="subvista-servicio" data-subtab-servicio-contenido="incluye">
       <div class="grid-2">
         <div class="tarjeta">
           <h3>Incluye</h3>
@@ -548,9 +820,11 @@ function plantillaServicio(servicio) {
           <ul class="lista-no-incluidos"></ul>
         </div>
       </div>
+    </div>
 
+    <div class="subvista-servicio" data-subtab-servicio-contenido="documentos">
       <div class="tarjeta">
-        <h3>Archivos</h3>
+        <h3>Documentos</h3>
         <form class="form-archivo grid-2">
           <input type="file" name="archivo" required />
           <div class="autocompletar">
@@ -559,12 +833,11 @@ function plantillaServicio(servicio) {
             <ul class="sugerencias" hidden></ul>
           </div>
           <select name="uso">
-            <option value="portada">portada</option>
-            <option value="galeria">galeria</option>
             <option value="documento">documento</option>
+            <option value="galeria">galeria</option>
             <option value="condiciones">condiciones</option>
           </select>
-          <button type="submit" class="col-span-2">Subir archivo</button>
+          <button type="submit" class="col-span-2">Subir documento</button>
         </form>
         <ul class="lista-archivos"></ul>
       </div>
@@ -574,10 +847,15 @@ function plantillaServicio(servicio) {
 
 // --- Carga de datos relacionados dentro de una pestaña de servicio ---
 
+// Genera un <li> con un texto y un boton "x" para eliminar ese elemento.
+function liConBorrar(texto, idItem) {
+  return `<li><span>${texto}</span><button type="button" class="eliminar-item" data-id="${idItem}">×</button></li>`;
+}
+
 async function cargarTarifas(seccion, idServicio) {
   const tarifas = await obtenerJSON(`/servicios/${idServicio}/tarifas`);
   seccion.querySelector('.lista-tarifas').innerHTML = tarifas
-    .map((t) => `<li>${t.nombre_tarifa}: ${t.precio_base} ${t.moneda || ''}</li>`)
+    .map((t) => liConBorrar(`${t.nombre_tarifa}: ${t.precio_base} ${t.moneda || ''}`, t.id_tarifa))
     .join('');
 }
 
@@ -592,15 +870,40 @@ async function cargarCondiciones(seccion, idServicio) {
 async function cargarIncluidos(seccion, idServicio) {
   const incluidos = await obtenerJSON(`/servicios/${idServicio}/incluidos`);
   const noIncluidos = await obtenerJSON(`/servicios/${idServicio}/no-incluidos`);
-  seccion.querySelector('.lista-incluidos').innerHTML = incluidos.map((i) => `<li>${i.descripcion}</li>`).join('');
-  seccion.querySelector('.lista-no-incluidos').innerHTML = noIncluidos.map((i) => `<li>${i.descripcion}</li>`).join('');
+  seccion.querySelector('.lista-incluidos').innerHTML = incluidos
+    .map((i) => liConBorrar(i.descripcion, i.id_incluido))
+    .join('');
+  seccion.querySelector('.lista-no-incluidos').innerHTML = noIncluidos
+    .map((i) => liConBorrar(i.descripcion, i.id_no_incluido))
+    .join('');
 }
 
+// Carga la lista de archivos del servicio y de paso actualiza la miniatura
+// de portada (si alguno de esos archivos tiene uso = "portada").
 async function cargarArchivos(seccion, idServicio) {
   const archivos = await obtenerJSON(`/servicios/${idServicio}/archivos`);
   seccion.querySelector('.lista-archivos').innerHTML = archivos
-    .map((a) => `<li><a href="${a.url_archivo}" target="_blank">${a.nombre_original}</a> (${a.uso})</li>`)
+    .map((a) => liConBorrar(`<a href="${a.url_archivo}" target="_blank">${a.nombre_original}</a> (${a.uso})`, a.id_archivo))
     .join('');
+
+  const portada = archivos.find((a) => a.uso === 'portada');
+  seccion.querySelector('.portada-preview').innerHTML = portada
+    ? `<img src="${portada.url_archivo}" alt="Portada" />`
+    : '<span class="miniatura-placeholder">🖼</span>';
+}
+
+// Cambia entre las sub-pestañas (Información básica / Condiciones /
+// Incluye / Documentos) de una pestaña de servicio en particular.
+function inicializarSubpestanasServicio(seccion) {
+  seccion.querySelectorAll('.subpestana-servicio').forEach((boton) => {
+    boton.addEventListener('click', () => {
+      const subtab = boton.dataset.subtabServicio;
+      seccion.querySelectorAll('.subpestana-servicio').forEach((b) => b.classList.toggle('activa', b === boton));
+      seccion
+        .querySelectorAll('.subvista-servicio')
+        .forEach((v) => v.classList.toggle('activa', v.dataset.subtabServicioContenido === subtab));
+    });
+  });
 }
 
 // --- Conecta los formularios de una pestaña de servicio con la API ---
@@ -609,18 +912,26 @@ function inicializarSeccionServicio(seccion, servicio) {
   let idServicioActual = servicio ? servicio.id_servicio : null;
 
   const formServicio = seccion.querySelector('.form-servicio');
-  const formArchivo = seccion.querySelector('.form-archivo');
+  inicializarSubpestanasServicio(seccion);
   try {
-    inicializarAutocompletarServicio(formServicio, formArchivo);
+    inicializarAutocompletarServicio(seccion);
   } catch (error) {
     mostrarMensaje(`No se pudo preparar el autocompletar: ${error.message}`, 'error');
   }
+
+  // Recalcula la duracion cada vez que cambia la fecha de inicio o de fin.
+  function actualizarDuracion() {
+    const fechaInicio = campo(formServicio, 'fecha_inicio').value;
+    const fechaFin = campo(formServicio, 'fecha_fin').value;
+    campo(formServicio, 'duracion').value = calcularDuracionTexto(fechaInicio, fechaFin);
+  }
+  campo(formServicio, 'fecha_inicio').addEventListener('change', actualizarDuracion);
+  campo(formServicio, 'fecha_fin').addEventListener('change', actualizarDuracion);
 
   if (servicio) {
     seccion.querySelector('[data-campo="id_tipo_servicio"]').value = valorMostrado(
       catalogoTipos,
       'id_tipo_servicio',
-      'nombre',
       servicio.id_tipo_servicio
     );
     campo(formServicio, 'id_tipo_servicio').value = servicio.id_tipo_servicio;
@@ -628,7 +939,6 @@ function inicializarSeccionServicio(seccion, servicio) {
     seccion.querySelector('[data-campo="id_proveedor"]').value = valorMostrado(
       catalogoProveedores,
       'id_proveedor',
-      'nombre',
       servicio.id_proveedor
     );
     campo(formServicio, 'id_proveedor').value = servicio.id_proveedor;
@@ -637,7 +947,6 @@ function inicializarSeccionServicio(seccion, servicio) {
       seccion.querySelector('[data-campo="id_destino"]').value = valorMostrado(
         catalogoDestinos,
         'id_destino',
-        'ciudad',
         servicio.id_destino
       );
       campo(formServicio, 'id_destino').value = servicio.id_destino;
@@ -671,7 +980,6 @@ function inicializarSeccionServicio(seccion, servicio) {
         boton.dataset.tab = String(idServicioActual);
         boton.querySelector('.pestana-texto').textContent = data.nombre;
 
-        seccion.querySelector('.secciones-relacionadas').hidden = false;
         await Promise.all([
           cargarTarifas(seccion, idServicioActual),
           cargarCondiciones(seccion, idServicioActual),
@@ -689,7 +997,7 @@ function inicializarSeccionServicio(seccion, servicio) {
 
   seccion.querySelector('.form-tarifa').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!idServicioActual) return;
+    if (requiereServicioGuardado(idServicioActual)) return;
     try {
       await enviarJSON(`/servicios/${idServicioActual}/tarifas`, 'POST', datosFormulario(e.target));
       e.target.reset();
@@ -702,7 +1010,7 @@ function inicializarSeccionServicio(seccion, servicio) {
 
   seccion.querySelector('.form-condiciones').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!idServicioActual) return;
+    if (requiereServicioGuardado(idServicioActual)) return;
     try {
       await enviarJSON(`/servicios/${idServicioActual}/condiciones`, 'POST', datosFormulario(e.target));
       mostrarMensaje('Condiciones guardadas', 'exito');
@@ -713,7 +1021,7 @@ function inicializarSeccionServicio(seccion, servicio) {
 
   seccion.querySelector('.form-incluido').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!idServicioActual) return;
+    if (requiereServicioGuardado(idServicioActual)) return;
     try {
       await enviarJSON(`/servicios/${idServicioActual}/incluidos`, 'POST', datosFormulario(e.target));
       e.target.reset();
@@ -726,7 +1034,7 @@ function inicializarSeccionServicio(seccion, servicio) {
 
   seccion.querySelector('.form-no-incluido').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!idServicioActual) return;
+    if (requiereServicioGuardado(idServicioActual)) return;
     try {
       await enviarJSON(`/servicios/${idServicioActual}/no-incluidos`, 'POST', datosFormulario(e.target));
       e.target.reset();
@@ -737,9 +1045,27 @@ function inicializarSeccionServicio(seccion, servicio) {
     }
   });
 
+  seccion.querySelector('.form-portada').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (requiereServicioGuardado(idServicioActual)) return;
+    try {
+      const formData = new FormData(e.target);
+      if (!formData.get('id_tipo_archivo')) {
+        throw new Error('Escribe un tipo de archivo ya registrado (agrégalo en Catálogos de apoyo si no existe).');
+      }
+      formData.set('uso', 'portada');
+      await enviarFormData(`/servicios/${idServicioActual}/archivos`, formData);
+      e.target.reset();
+      await cargarArchivos(seccion, idServicioActual);
+      mostrarMensaje('Portada actualizada', 'exito');
+    } catch (error) {
+      mostrarMensaje(error.message, 'error');
+    }
+  });
+
   seccion.querySelector('.form-archivo').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!idServicioActual) return;
+    if (requiereServicioGuardado(idServicioActual)) return;
     try {
       const formData = new FormData(e.target);
       if (!formData.get('id_tipo_archivo')) {
@@ -748,11 +1074,52 @@ function inicializarSeccionServicio(seccion, servicio) {
       await enviarFormData(`/servicios/${idServicioActual}/archivos`, formData);
       e.target.reset();
       await cargarArchivos(seccion, idServicioActual);
-      mostrarMensaje('Archivo subido', 'exito');
+      mostrarMensaje('Documento subido', 'exito');
     } catch (error) {
       mostrarMensaje(error.message, 'error');
     }
   });
+
+  // Muestra el nombre del archivo elegido para la portada (el input queda oculto).
+  seccion.querySelector('.form-portada [name="archivo"]').addEventListener('change', (e) => {
+    const nombre = e.target.files[0]?.name || 'Ningún archivo elegido';
+    seccion.querySelector('.portada-archivo-nombre').textContent = nombre;
+  });
+
+  seccion.querySelector('.boton-eliminar-condiciones').addEventListener('click', async () => {
+    if (requiereServicioGuardado(idServicioActual)) return;
+    if (!confirm('¿Eliminar las condiciones de este servicio?')) return;
+    try {
+      await fetch(`/servicios/${idServicioActual}/condiciones`, { method: 'DELETE' });
+      seccion.querySelector('.form-condiciones').reset();
+      mostrarMensaje('Condiciones eliminadas', 'exito');
+    } catch (error) {
+      mostrarMensaje(error.message, 'error');
+    }
+  });
+
+  // Conecta el boton "x" de una lista (tarifas, incluidos, no incluidos o
+  // archivos) con su endpoint de borrado y vuelve a cargar esa lista.
+  function conectarBorradoDeLista(selectorLista, endpoint, recargar) {
+    seccion.querySelector(selectorLista).addEventListener('click', async (e) => {
+      const boton = e.target.closest('.eliminar-item');
+      if (!boton) return;
+      if (!confirm('¿Eliminar este elemento?')) return;
+      try {
+        const respuesta = await fetch(`/servicios/${idServicioActual}/${endpoint}/${boton.dataset.id}`, { method: 'DELETE' });
+        if (!respuesta.ok) throw new Error(`No se pudo eliminar (código ${respuesta.status})`);
+        await recargar();
+        mostrarMensaje('Eliminado correctamente', 'exito');
+      } catch (error) {
+        mostrarMensaje(error.message, 'error');
+      }
+    });
+  }
+
+  conectarBorradoDeLista('.lista-tarifas', 'tarifas', () => cargarTarifas(seccion, idServicioActual));
+  conectarBorradoDeLista('.lista-incluidos', 'incluidos', () => cargarIncluidos(seccion, idServicioActual));
+  conectarBorradoDeLista('.lista-no-incluidos', 'no-incluidos', () => cargarIncluidos(seccion, idServicioActual));
+  conectarBorradoDeLista('.lista-archivos', 'archivos', () => cargarArchivos(seccion, idServicioActual));
 
   if (servicio) {
     Promise.all([
@@ -814,4 +1181,6 @@ document.getElementById('boton-nuevo-servicio').addEventListener('click', abrirN
 // --- Inicio ---
 
 cargarCatalogos();
+cargarDefectos();
+cargarPaises();
 cargarServicios();

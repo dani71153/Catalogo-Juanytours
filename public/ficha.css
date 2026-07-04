@@ -1,0 +1,148 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Georgia, 'Times New Roman', serif;
+  background: #eceef1;
+  color: #222;
+  margin: 0;
+  padding: 2rem 1rem 4rem;
+}
+
+.barra-acciones {
+  max-width: 800px;
+  margin: 0 auto 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.barra-acciones button {
+  background: #1e3a5f;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: system-ui, Arial, sans-serif;
+  font-size: 0.9rem;
+}
+
+.barra-acciones button:hover {
+  background: #16456b;
+}
+
+.ficha {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  padding: 3rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+}
+
+.cargando,
+.error {
+  font-family: system-ui, Arial, sans-serif;
+  text-align: center;
+  color: #666;
+}
+
+.error {
+  color: #b02a37;
+}
+
+.ficha-portada {
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+}
+
+.ficha-encabezado {
+  border-bottom: 2px solid #1e3a5f;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.ficha-encabezado h1 {
+  margin: 0 0 0.25rem;
+  color: #1e3a5f;
+}
+
+.ficha-subtitulo {
+  margin: 0;
+  color: #666;
+  font-style: italic;
+}
+
+.ficha-descripcion {
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.ficha section {
+  margin-top: 2rem;
+}
+
+.ficha h2 {
+  color: #1e3a5f;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.3rem;
+}
+
+.ficha-tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ficha-tabla th,
+.ficha-tabla td {
+  text-align: left;
+  padding: 0.5rem 0.3rem;
+  border-bottom: 1px solid #eee;
+}
+
+.ficha-columnas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.ficha-columna ul {
+  padding-left: 1.2rem;
+  margin: 0;
+}
+
+.ficha-galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.ficha-galeria img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* --- Impresión / Guardar como PDF --- */
+
+@media print {
+  body {
+    background: white;
+    padding: 0;
+  }
+
+  .barra-acciones {
+    display: none;
+  }
+
+  .ficha {
+    box-shadow: none;
+    max-width: none;
+    padding: 0;
+  }
+}

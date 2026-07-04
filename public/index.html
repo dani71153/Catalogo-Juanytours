@@ -39,7 +39,52 @@
               <button type="button" class="boton-vista" data-vista="lista">☰ Lista</button>
             </div>
           </div>
-          <input type="text" id="buscador-servicios" class="buscador" placeholder="🔍 Buscar por nombre o proveedor..." />
+          <div class="fila-busqueda">
+            <input type="text" id="buscador-servicios" class="buscador" placeholder="🔍 Buscar por nombre o proveedor..." />
+            <button type="button" id="boton-filtros" class="secundario">Filtros</button>
+          </div>
+
+          <div id="panel-filtros" class="panel-filtros" hidden>
+            <div class="grid-2">
+              <div>
+                <label>Tipo de servicio</label>
+                <select id="filtro-tipo"></select>
+              </div>
+              <div>
+                <label>Proveedor</label>
+                <select id="filtro-proveedor"></select>
+              </div>
+              <div>
+                <label>Destino</label>
+                <select id="filtro-destino"></select>
+              </div>
+              <div>
+                <label>Estado</label>
+                <select id="filtro-estado">
+                  <option value="">Todos</option>
+                  <option value="activo">Activo</option>
+                  <option value="inactivo">Inactivo</option>
+                </select>
+              </div>
+              <div>
+                <label>Fecha desde</label>
+                <input type="date" id="filtro-fecha-desde" />
+              </div>
+              <div>
+                <label>Fecha hasta</label>
+                <input type="date" id="filtro-fecha-hasta" />
+              </div>
+              <div>
+                <label>Precio mínimo</label>
+                <input type="number" id="filtro-precio-min" min="0" step="0.01" placeholder="0" />
+              </div>
+              <div>
+                <label>Precio máximo</label>
+                <input type="number" id="filtro-precio-max" min="0" step="0.01" placeholder="Sin límite" />
+              </div>
+            </div>
+            <button type="button" id="boton-limpiar-filtros" class="secundario">Limpiar filtros</button>
+          </div>
 
           <div id="grid-servicios" class="grid-servicios"></div>
 
@@ -82,7 +127,14 @@
           <div class="tarjeta">
             <h3>Destinos</h3>
             <form id="form-destino">
-              <input type="text" name="ciudad" placeholder="Ciudad" required />
+              <div class="autocompletar">
+                <input type="text" name="pais" class="campo-pais" placeholder="País" autocomplete="off" />
+                <ul class="sugerencias" hidden></ul>
+              </div>
+              <div class="autocompletar">
+                <input type="text" name="ciudad" class="campo-ciudad" placeholder="Elige un país primero..." autocomplete="off" required />
+                <ul class="sugerencias" hidden></ul>
+              </div>
               <button type="submit">Agregar</button>
             </form>
             <ul id="lista-destinos" class="lista-catalogo"></ul>
@@ -95,6 +147,38 @@
               <button type="submit">Agregar</button>
             </form>
             <ul id="lista-tipos-archivo" class="lista-catalogo"></ul>
+          </div>
+
+          <div class="tarjeta">
+            <h3>Incluye por defecto</h3>
+            <p class="texto-secundario">Se copian a los servicios nuevos si marcas la casilla "Usar valores por defecto".</p>
+            <form id="form-incluido-defecto">
+              <input type="text" name="descripcion" placeholder="Ej: Guía turístico" required />
+              <button type="submit">Agregar</button>
+            </form>
+            <ul id="lista-incluidos-defecto" class="lista-catalogo"></ul>
+          </div>
+
+          <div class="tarjeta">
+            <h3>No incluye por defecto</h3>
+            <p class="texto-secundario">Se copian a los servicios nuevos si marcas la casilla "Usar valores por defecto".</p>
+            <form id="form-no-incluido-defecto">
+              <input type="text" name="descripcion" placeholder="Ej: Propinas" required />
+              <button type="submit">Agregar</button>
+            </form>
+            <ul id="lista-no-incluidos-defecto" class="lista-catalogo"></ul>
+          </div>
+
+          <div class="tarjeta">
+            <h3>Condiciones por defecto</h3>
+            <p class="texto-secundario">Plantilla única que se copia a los servicios nuevos si marcas la casilla.</p>
+            <form id="form-condiciones-defecto">
+              <textarea name="politica_cancelacion" placeholder="Política de cancelación"></textarea>
+              <textarea name="requisitos" placeholder="Requisitos"></textarea>
+              <textarea name="notas" placeholder="Notas"></textarea>
+              <button type="submit">Guardar plantilla</button>
+              <button type="button" id="boton-eliminar-condiciones-defecto" class="secundario">Eliminar plantilla</button>
+            </form>
           </div>
         </div>
       </div>

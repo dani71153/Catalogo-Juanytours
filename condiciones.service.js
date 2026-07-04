@@ -20,8 +20,13 @@ function actualizarCondiciones(idServicio, data) {
   return update(TABLA, ID_COLUMNA, condiciones.id_condicion, data);
 }
 
+function eliminarCondiciones(idServicio) {
+  return query(`DELETE FROM ${TABLA} WHERE id_servicio = ?`, [idServicio]);
+}
+
 module.exports = {
   guardarCondiciones,
   obtenerCondiciones,
   actualizarCondiciones,
+  eliminarCondiciones,
 };

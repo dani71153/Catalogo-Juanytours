@@ -144,6 +144,89 @@ main {
   display: block;
 }
 
+/* --- Subpestañas dentro de una pestaña de servicio (info/condiciones/...) --- */
+
+.subpestanas-servicio {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.subpestana-servicio {
+  background: transparent;
+  color: #555;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  padding: 0.5rem 0.8rem;
+}
+
+.subpestana-servicio:hover {
+  background: #eef1f5;
+  color: #222;
+}
+
+.subpestana-servicio.activa {
+  color: #1e3a5f;
+  border-bottom-color: #1e3a5f;
+  font-weight: 600;
+}
+
+.subvista-servicio {
+  display: none;
+}
+
+.subvista-servicio.activa {
+  display: block;
+}
+
+.portada-fila {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.portada-actual {
+  width: 90px;
+  height: 90px;
+  min-width: 90px;
+  background: #eef1f5;
+  border: 1px dashed #ccc;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.portada-actual:hover {
+  border-color: #1e3a5f;
+}
+
+.portada-preview,
+.portada-actual img {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portada-actual img {
+  object-fit: cover;
+}
+
+.portada-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 220px;
+}
+
 .lista-catalogo li {
   display: flex;
   justify-content: space-between;
@@ -345,6 +428,19 @@ label {
   margin-bottom: 0.25rem;
 }
 
+.casilla-defectos label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.casilla-defectos input[type='checkbox'] {
+  width: auto;
+  margin: 0;
+}
+
 input,
 select,
 textarea {
@@ -387,7 +483,35 @@ button:hover {
 }
 
 .buscador {
+  margin-bottom: 0;
+}
+
+.fila-busqueda {
+  display: flex;
+  gap: 0.5rem;
   margin-bottom: 1rem;
+}
+
+.fila-busqueda .buscador {
+  flex: 1;
+}
+
+.fila-busqueda button.activa {
+  background: #1e3a5f;
+  color: white;
+  border-color: #1e3a5f;
+}
+
+.panel-filtros {
+  background: #f8f9fb;
+  border: 1px solid #e0e3e8;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.panel-filtros .grid-2 {
+  margin-bottom: 0.75rem;
 }
 
 /* --- Tabla --- */
@@ -423,6 +547,9 @@ ul {
 ul li {
   padding: 0.4rem 0;
   border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .badge {

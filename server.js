@@ -1,12 +1,16 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const paises = require('i18n-iso-countries');
+paises.registerLocale(require('i18n-iso-countries/langs/es.json'));
+const { City } = require('country-state-city');
 
 const servicios = require('./services.service');
 const tarifas = require('./tarifas.service');
 const condiciones = require('./condiciones.service');
 const incluidos = require('./incluidos.service');
 const archivos = require('./archivos.service');
+const defectos = require('./defectos.service');
 const { query, insert, remove } = require('./db');
 
 const app = express();
@@ -15,6 +19,24 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Lista de nombres de paises en español, para el autocompletar de destinos.
+app.get('/paises', (req, res) => {
+  const nombres = Object.values(paises.getNames('es')).sort((a, b) => a.localeCompare(b, 'es'));
+  res.json(nombres);
+});
+
+// Lista de ciudades de un pais (recibido por nombre en español), para
+// autocompletar la ciudad una vez elegido el pais en Destinos.
+app.get('/ciudades', (req, res) => {
+  const codigo = paises.getAlpha2Code(req.query.pais || '', 'es');
+  if (!codigo) return res.json([]);
+
+  const nombres = City.getCitiesOfCountry(codigo)
+    .map((c) => c.name)
+    .sort((a, b) => a.localeCompare(b, 'es'));
+  res.json(nombres);
+});
 
 // Borra una fila de un catalogo de apoyo. Si esta en uso por otra tabla
 // (foreign key), SQLite rechaza el borrado y avisamos con un mensaje claro.
@@ -81,10 +103,58 @@ app.delete('/tipos-archivo/:id', (req, res) => {
   eliminarDeCatalogo(res, 'tipos_archivo', 'id_tipo_archivo', req.params.id);
 });
 
+// --- Valores por defecto (incluidos/no incluidos/condiciones para servicios nuevos) ---
+
+app.get('/incluidos-defecto', (req, res) => {
+  res.json(defectos.listarIncluidosDefecto());
+});
+
+app.post('/incluidos-defecto', (req, res) => {
+  const id = defectos.agregarIncluidoDefecto(req.body.descripcion);
+  res.status(201).json({ id_incluido_defecto: id });
+});
+
+app.delete('/incluidos-defecto/:id', (req, res) => {
+  defectos.eliminarIncluidoDefecto(req.params.id);
+  res.status(204).send();
+});
+
+app.get('/no-incluidos-defecto', (req, res) => {
+  res.json(defectos.listarNoIncluidosDefecto());
+});
+
+app.post('/no-incluidos-defecto', (req, res) => {
+  const id = defectos.agregarNoIncluidoDefecto(req.body.descripcion);
+  res.status(201).json({ id_no_incluido_defecto: id });
+});
+
+app.delete('/no-incluidos-defecto/:id', (req, res) => {
+  defectos.eliminarNoIncluidoDefecto(req.params.id);
+  res.status(204).send();
+});
+
+app.get('/condiciones-defecto', (req, res) => {
+  res.json(defectos.obtenerCondicionesDefecto());
+});
+
+app.post('/condiciones-defecto', (req, res) => {
+  defectos.guardarCondicionesDefecto(req.body);
+  res.status(201).json({ ok: true });
+});
+
+app.delete('/condiciones-defecto', (req, res) => {
+  defectos.eliminarCondicionesDefecto();
+  res.status(204).send();
+});
+
 // --- Servicios ---
 
 app.post('/servicios', (req, res) => {
-  const idServicio = servicios.crearServicio(req.body);
+  const { usar_defectos, ...datosServicio } = req.body;
+  const idServicio = servicios.crearServicio(datosServicio);
+  if (usar_defectos) {
+    defectos.aplicarDefectosAServicio(idServicio);
+  }
   res.status(201).json({ id_servicio: idServicio });
 });
 
@@ -119,6 +189,11 @@ app.get('/servicios/:id/tarifas', (req, res) => {
   res.json(tarifas.listarTarifasPorServicio(req.params.id));
 });
 
+app.delete('/servicios/:id/tarifas/:idTarifa', (req, res) => {
+  tarifas.eliminarTarifa(req.params.idTarifa);
+  res.status(204).send();
+});
+
 // --- Condiciones ---
 
 app.post('/servicios/:id/condiciones', (req, res) => {
@@ -128,6 +203,11 @@ app.post('/servicios/:id/condiciones', (req, res) => {
 
 app.get('/servicios/:id/condiciones', (req, res) => {
   res.json(condiciones.obtenerCondiciones(req.params.id));
+});
+
+app.delete('/servicios/:id/condiciones', (req, res) => {
+  condiciones.eliminarCondiciones(req.params.id);
+  res.status(204).send();
 });
 
 // --- Incluidos / no incluidos ---
@@ -150,6 +230,16 @@ app.get('/servicios/:id/no-incluidos', (req, res) => {
   res.json(incluidos.listarNoIncluidos(req.params.id));
 });
 
+app.delete('/servicios/:id/incluidos/:idIncluido', (req, res) => {
+  incluidos.eliminarIncluido(req.params.idIncluido);
+  res.status(204).send();
+});
+
+app.delete('/servicios/:id/no-incluidos/:idNoIncluido', (req, res) => {
+  incluidos.eliminarNoIncluido(req.params.idNoIncluido);
+  res.status(204).send();
+});
+
 // --- Archivos ---
 
 app.post('/servicios/:id/archivos', upload.single('archivo'), (req, res) => {
@@ -164,6 +254,11 @@ app.post('/servicios/:id/archivos', upload.single('archivo'), (req, res) => {
 
 app.get('/servicios/:id/archivos', (req, res) => {
   res.json(archivos.listarArchivosDeServicio(req.params.id));
+});
+
+app.delete('/servicios/:id/archivos/:idArchivo', (req, res) => {
+  archivos.eliminarArchivoDeServicio(req.params.id, req.params.idArchivo);
+  res.status(204).send();
 });
 
 const PUERTO = process.env.PORT || 3000;

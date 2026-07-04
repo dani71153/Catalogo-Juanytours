@@ -50,11 +50,21 @@ function listarArchivosDeServicio(idServicio) {
   );
 }
 
+// Quita el vinculo del archivo con este servicio. Si ningun otro servicio
+// lo sigue usando, tambien borra el registro y el archivo fisico en disco.
 function eliminarArchivoDeServicio(idServicio, idArchivo) {
-  return query(
-    'DELETE FROM servicio_archivos WHERE id_servicio = ? AND id_archivo = ?',
-    [idServicio, idArchivo]
-  );
+  query('DELETE FROM servicio_archivos WHERE id_servicio = ? AND id_archivo = ?', [idServicio, idArchivo]);
+
+  const [{ total }] = query('SELECT COUNT(*) AS total FROM servicio_archivos WHERE id_archivo = ?', [idArchivo]);
+  if (total > 0) return;
+
+  const [archivo] = query('SELECT * FROM archivos WHERE id_archivo = ?', [idArchivo]);
+  if (!archivo) return;
+
+  const ruta = path.join(CARPETA_SUBIDAS, archivo.nombre_guardado);
+  if (fs.existsSync(ruta)) fs.unlinkSync(ruta);
+
+  query('DELETE FROM archivos WHERE id_archivo = ?', [idArchivo]);
 }
 
 module.exports = {
