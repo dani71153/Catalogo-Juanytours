@@ -119,3 +119,14 @@ CREATE TABLE condiciones_defecto (
   requisitos TEXT,
   notas TEXT
 );
+
+-- Registro de cada intento de extraccion con IA, para las estadisticas de
+-- uso en Opciones > IA.
+CREATE TABLE ia_usos (
+  id_uso INTEGER PRIMARY KEY AUTOINCREMENT,
+  fecha TEXT NOT NULL,
+  proveedor TEXT,
+  modelo TEXT,
+  exito INTEGER NOT NULL, -- 1 o 0
+  mensaje_error TEXT
+);

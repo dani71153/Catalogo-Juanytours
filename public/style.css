@@ -11,7 +11,7 @@ body {
 }
 
 header {
-  background: #1e3a5f;
+  background: #2563eb;
   color: white;
   padding: 0.9rem 1.5rem;
   display: flex;
@@ -36,7 +36,7 @@ header {
 
 header button {
   background: white;
-  color: #1e3a5f;
+  color: #2563eb;
   font-weight: 600;
 }
 
@@ -74,8 +74,8 @@ header button:hover {
 }
 
 .pestana.activa {
-  color: #1e3a5f;
-  border-bottom-color: #1e3a5f;
+  color: #2563eb;
+  border-bottom-color: #2563eb;
   font-weight: 600;
 }
 
@@ -109,14 +109,16 @@ main {
 
 /* --- Subpestañas (dentro de una vista, ej. Catálogo) --- */
 
-.subpestanas {
+.subpestanas,
+.subpestanas-opciones {
   display: flex;
   gap: 0.25rem;
   margin-bottom: 1rem;
   border-bottom: 1px solid #ddd;
 }
 
-.subpestana {
+.subpestana,
+.subpestana-opciones {
   background: transparent;
   color: #555;
   border: none;
@@ -125,15 +127,25 @@ main {
   padding: 0.5rem 0.8rem;
 }
 
-.subpestana:hover {
+.subpestana:hover,
+.subpestana-opciones:hover {
   background: #eef1f5;
   color: #222;
 }
 
-.subpestana.activa {
-  color: #1e3a5f;
-  border-bottom-color: #1e3a5f;
+.subpestana.activa,
+.subpestana-opciones.activa {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
   font-weight: 600;
+}
+
+.subvista-opciones-contenido {
+  display: none;
+}
+
+.subvista-opciones-contenido.activa {
+  display: block;
 }
 
 .subvista {
@@ -168,8 +180,8 @@ main {
 }
 
 .subpestana-servicio.activa {
-  color: #1e3a5f;
-  border-bottom-color: #1e3a5f;
+  color: #2563eb;
+  border-bottom-color: #2563eb;
   font-weight: 600;
 }
 
@@ -203,7 +215,7 @@ main {
 }
 
 .portada-actual:hover {
-  border-color: #1e3a5f;
+  border-color: #2563eb;
 }
 
 .portada-preview,
@@ -254,10 +266,11 @@ main {
 
 .tarjeta {
   background: white;
-  border-radius: 8px;
-  padding: 1.2rem 1.5rem;
+  border: 1px solid #eef0f3;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
 }
 
 .tarjeta h2 {
@@ -280,7 +293,7 @@ main {
 
 .badge-conteo {
   background: #e6ecf3;
-  color: #1e3a5f;
+  color: #2563eb;
   font-size: 0.8rem;
   font-weight: 500;
   padding: 0.2rem 0.6rem;
@@ -309,9 +322,9 @@ button.secundario {
 }
 
 .boton-vista.activa {
-  background: #1e3a5f;
+  background: #2563eb;
   color: white;
-  border-color: #1e3a5f;
+  border-color: #2563eb;
 }
 
 /* --- Cuadricula de servicios --- */
@@ -369,7 +382,7 @@ button.secundario {
 }
 
 .tarjeta-servicio-precio {
-  color: #1e3a5f;
+  color: #2563eb;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -415,6 +428,16 @@ button.secundario {
   background: #eef1f5;
 }
 
+.sugerencias li.sugerencia-crear {
+  color: #2563eb;
+  font-weight: 600;
+  border-top: 1px solid #eee;
+}
+
+.sugerencias li.sugerencia-crear:hover {
+  background: #e6ecf3;
+}
+
 button.secundario:hover {
   background: #e2e5ea;
 }
@@ -445,11 +468,20 @@ input,
 select,
 textarea {
   width: 100%;
-  padding: 0.5rem;
+  padding: 0.55rem 0.7rem;
   margin-bottom: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  border: 1px solid #d7dbe0;
+  border-radius: 8px;
   font-size: 0.95rem;
+  background: white;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 textarea {
@@ -458,22 +490,29 @@ textarea {
 }
 
 button {
-  background: #1e3a5f;
+  background: #2563eb;
   color: white;
   border: none;
-  padding: 0.55rem 1.2rem;
-  border-radius: 4px;
+  padding: 0.6rem 1.3rem;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
 }
 
 button:hover {
-  background: #16456b;
+  background: #1d4ed8;
 }
 
 .grid-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0 1rem;
+  align-items: start;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0 1rem;
   align-items: start;
 }
@@ -497,9 +536,9 @@ button:hover {
 }
 
 .fila-busqueda button.activa {
-  background: #1e3a5f;
+  background: #2563eb;
   color: white;
-  border-color: #1e3a5f;
+  border-color: #2563eb;
 }
 
 .panel-filtros {
@@ -594,7 +633,7 @@ ul li {
 
 .enlace-accion {
   background: none;
-  color: #1e3a5f;
+  color: #2563eb;
   text-decoration: underline;
   padding: 0 0.3rem;
   font-size: 0.85rem;
@@ -602,7 +641,7 @@ ul li {
 
 .enlace-accion:hover {
   background: none;
-  color: #16456b;
+  color: #1d4ed8;
 }
 
 .enlace-accion.peligro {
@@ -611,5 +650,201 @@ ul li {
 
 .enlace-accion.peligro:hover {
   color: #7a1c26;
+}
+
+/* --- Tarjeta "Extraer datos con IA" (horizontal) --- */
+
+.tarjeta-ia {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.tarjeta-ia-icono {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 10px;
+  background: #e8f0fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+.tarjeta-ia-texto {
+  flex: 1;
+  min-width: 200px;
+}
+
+.tarjeta-ia-texto h3 {
+  margin: 0 0 0.2rem;
+}
+
+.tarjeta-ia-texto p {
+  margin: 0;
+}
+
+.tarjeta-ia-acciones {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.boton-outline {
+  background: white;
+  color: #2563eb;
+  border: 1px solid #2563eb;
+}
+
+.boton-outline:hover {
+  background: #eff4ff;
+}
+
+.enlace-info {
+  background: none;
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.enlace-info:hover {
+  background: none;
+  text-decoration: underline;
+}
+
+/* --- Campo con icono a la derecha (ej. Destino) --- */
+
+.campo-con-icono {
+  position: relative;
+}
+
+.campo-con-icono input {
+  padding-right: 2.2rem;
+}
+
+.campo-con-icono .icono-campo {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #888;
+}
+
+/* --- Duracion calculada (solo lectura, estilo "bloqueado") --- */
+
+.campo-bloqueado {
+  background: #f4f5f7;
+  color: #888;
+}
+
+/* --- Contador de caracteres --- */
+
+.campo-con-contador {
+  position: relative;
+}
+
+.contador-caracteres {
+  display: block;
+  text-align: right;
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: -0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* --- Tabla de tarifas editable --- */
+
+.tabla-tarifas input,
+.tabla-tarifas select {
+  margin-bottom: 0;
+}
+
+.tabla-tarifas td {
+  padding: 0.4rem;
+}
+
+.boton-borrar-fila {
+  background: none;
+  color: #b02a37;
+  padding: 0.3rem 0.5rem;
+}
+
+.boton-borrar-fila:hover {
+  background: #fbe4e4;
+}
+
+/* --- Zonas de arrastrar y soltar (portada / documentos) --- */
+
+.zona-arrastrar {
+  border: 2px dashed #d7dbe0;
+  border-radius: 10px;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  color: #667;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.zona-arrastrar:hover,
+.zona-arrastrar.arrastrando {
+  border-color: #2563eb;
+  background: #f5f8ff;
+}
+
+.zona-arrastrar .icono-subir {
+  font-size: 1.5rem;
+}
+
+.zona-arrastrar .enlace-info {
+  display: inline;
+}
+
+.zona-arrastrar small {
+  color: #999;
+}
+
+/* --- Barra de acciones inferior (Cancelar / Guardar) --- */
+
+.barra-acciones-servicio {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  background: white;
+  border: 1px solid #eef0f3;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* --- Vista previa de la portada, debajo de la zona de arrastrar --- */
+
+.portada-preview-fila {
+  margin-top: 0.75rem;
+}
+
+.portada-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+}
+
+.portada-preview img {
+  max-width: 100%;
+  max-height: 160px;
+  border-radius: 8px;
+  display: block;
+}
+
+.portada-preview .miniatura-placeholder {
+  font-size: 1.6rem;
+  color: #ccc;
 }
 

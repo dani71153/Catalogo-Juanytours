@@ -11,6 +11,7 @@ const condiciones = require('./condiciones.service');
 const incluidos = require('./incluidos.service');
 const archivos = require('./archivos.service');
 const defectos = require('./defectos.service');
+const iaRoutes = require('./integracion-ia/ia.routes');
 const { query, insert, remove } = require('./db');
 
 const app = express();
@@ -19,6 +20,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(iaRoutes);
 
 // Lista de nombres de paises en español, para el autocompletar de destinos.
 app.get('/paises', (req, res) => {

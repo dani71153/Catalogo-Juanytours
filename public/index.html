@@ -28,6 +28,7 @@
       <div class="subpestanas">
         <button type="button" class="subpestana activa" data-subtab="servicios">Servicios</button>
         <button type="button" class="subpestana" data-subtab="apoyo">⚙ Catálogos de apoyo</button>
+        <button type="button" class="subpestana" data-subtab="opciones">🔧 Opciones</button>
       </div>
 
       <div id="subvista-servicios" class="subvista activa">
@@ -179,6 +180,44 @@
               <button type="submit">Guardar plantilla</button>
               <button type="button" id="boton-eliminar-condiciones-defecto" class="secundario">Eliminar plantilla</button>
             </form>
+          </div>
+
+        </div>
+      </div>
+
+      <div id="subvista-opciones" class="subvista">
+        <div class="subpestanas-opciones">
+          <button type="button" class="subpestana-opciones activa" data-subtab-opciones="ia">✨ IA</button>
+          <button type="button" class="subpestana-opciones" data-subtab-opciones="estadisticas">📊 Estadísticas</button>
+        </div>
+
+        <div class="subvista-opciones-contenido activa" data-subtab-opciones-contenido="ia">
+          <div class="tarjeta">
+            <h3>✨ Configuración de IA</h3>
+            <p class="texto-secundario">Elige el proveedor y su API key para poder extraer datos de una imagen al crear un servicio.</p>
+            <form id="form-configuracion-ia">
+              <label>Proveedor</label>
+              <select name="proveedor">
+                <option value="openai">OpenAI (GPT-4o)</option>
+                <option value="anthropic">Anthropic (Claude)</option>
+                <option value="gemini">Google (Gemini)</option>
+              </select>
+              <label>API key</label>
+              <input type="password" name="apiKey" placeholder="Pega aquí la API key de ese proveedor" autocomplete="off" />
+              <label>Modelo (opcional)</label>
+              <input type="text" name="modelo" class="campo-modelo-ia" placeholder="Se usa el modelo por defecto si lo dejas vacío" autocomplete="off" />
+              <p class="texto-secundario">Cámbialo solo si el proveedor deja de soportar el modelo por defecto (ej. lo renombran o lo retiran).</p>
+              <button type="submit">Guardar configuración</button>
+              <button type="button" id="boton-eliminar-api-key" class="secundario">Eliminar API key de este proveedor</button>
+            </form>
+            <p class="texto-secundario" id="estado-configuracion-ia"></p>
+          </div>
+        </div>
+
+        <div class="subvista-opciones-contenido" data-subtab-opciones-contenido="estadisticas">
+          <div class="tarjeta">
+            <h3>📊 Estadísticas de uso de IA</h3>
+            <div id="estadisticas-ia">Cargando...</div>
           </div>
         </div>
       </div>

@@ -61,6 +61,17 @@ async function enviarFormData(url, formData) {
   return respuesta.json();
 }
 
+// Como la de arriba, pero mostrando el mensaje de error real que mande el
+// servidor (util para la IA: "falta API key", "proveedor no configurado"...).
+async function enviarFormDataConError(url, formData) {
+  const respuesta = await fetch(url, { method: 'POST', body: formData });
+  const cuerpo = await respuesta.json();
+  if (!respuesta.ok) {
+    throw new Error(cuerpo.error || `Error (código ${respuesta.status})`);
+  }
+  return cuerpo;
+}
+
 function datosFormulario(form) {
   const data = {};
   new FormData(form).forEach((valor, clave) => {
@@ -115,6 +126,19 @@ async function cargarCatalogos() {
   }
 }
 
+// Adivina el tipo de archivo (imagen/documento) a partir del mime-type, y lo
+// crea en el catalogo si todavia no existe. Asi no hay que preguntarle al
+// usuario el tipo de archivo cada vez que sube una portada o un documento.
+async function inferirTipoArchivo(mimeType) {
+  const nombre = mimeType.startsWith('image/') ? 'imagen' : mimeType === 'application/pdf' ? 'documento' : 'archivo';
+  const existente = catalogoTiposArchivo.find((t) => t.nombre.toLowerCase() === nombre);
+  if (existente) return existente.id_tipo_archivo;
+
+  const resultado = await enviarJSON('/tipos-archivo', 'POST', { nombre });
+  await cargarCatalogos();
+  return resultado.id_tipo_archivo;
+}
+
 // Llena un <select> de filtro conservando la opcion elegida si sigue existiendo.
 function llenarSelectFiltro(select, opciones, campoId, textoDe) {
   const valorActual = select.value;
@@ -147,29 +171,67 @@ function catalogoActualPara(campoId) {
   return [];
 }
 
+// Que endpoint y que datos usar para crear un registro nuevo al vuelo desde
+// el propio autocompletar, cuando lo que se escribe no existe todavia.
+const CREACION_RAPIDA_POR_CAMPO = {
+  id_tipo_servicio: { endpoint: 'tipos-servicio', construirDatos: (texto) => ({ nombre: texto }) },
+  id_proveedor: { endpoint: 'proveedores', construirDatos: (texto) => ({ nombre: texto }) },
+  id_tipo_archivo: { endpoint: 'tipos-archivo', construirDatos: (texto) => ({ nombre: texto }) },
+  id_destino: {
+    endpoint: 'destinos',
+    construirDatos: (texto) => {
+      const [ciudad, pais] = texto.split(',').map((parte) => parte.trim());
+      return pais ? { ciudad, pais } : { ciudad };
+    },
+  },
+};
+
+// Crea el registro con el texto escrito, lo selecciona, y refresca los
+// catalogos para que quede disponible en cualquier otro campo/pestaña abierta.
+async function crearDesdeAutocompletar(campoId, texto, input, inputOculto) {
+  const config = CREACION_RAPIDA_POR_CAMPO[campoId];
+  try {
+    const resultado = await enviarJSON(`/${config.endpoint}`, 'POST', config.construirDatos(texto));
+    input.value = texto;
+    inputOculto.value = resultado[campoId];
+    await cargarCatalogos();
+    mostrarMensaje('Agregado al catálogo', 'exito');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  }
+}
+
 // Conecta un campo de texto con su lista de sugerencias: al escribir o
 // enfocar, filtra el catalogo y muestra las coincidencias; al hacer clic en
-// una, la selecciona y guarda su id en el input oculto.
+// una, la selecciona y guarda su id en el input oculto. Si lo escrito no
+// coincide con nada, ofrece un "+ Agregar" para crearlo sin salir de aqui.
 function conectarAutocompletarCampo(input, campoId) {
   const inputOculto = input.nextElementSibling; // el input hidden va justo despues en el HTML
   const lista = inputOculto.nextElementSibling; // y la <ul class="sugerencias"> despues del hidden
 
   function mostrarSugerencias() {
-    const texto = input.value.trim().toLowerCase();
+    const texto = input.value.trim();
     const catalogo = catalogoActualPara(campoId);
     const coincidencias = texto
-      ? catalogo.filter((item) => textoDeItem(campoId, item).toLowerCase().includes(texto))
+      ? catalogo.filter((item) => textoDeItem(campoId, item).toLowerCase().includes(texto.toLowerCase()))
       : catalogo;
 
-    if (coincidencias.length === 0) {
+    let html = coincidencias
+      .map((item) => `<li data-id="${item[campoId]}" data-texto="${textoDeItem(campoId, item)}">${textoDeItem(campoId, item)}</li>`)
+      .join('');
+
+    const hayCoincidenciaExacta = catalogo.some((item) => textoDeItem(campoId, item).toLowerCase() === texto.toLowerCase());
+    if (texto && !hayCoincidenciaExacta && CREACION_RAPIDA_POR_CAMPO[campoId]) {
+      html += `<li class="sugerencia-crear" data-crear="${texto}">➕ Agregar "${texto}"</li>`;
+    }
+
+    if (!html) {
       lista.hidden = true;
       lista.innerHTML = '';
       return;
     }
 
-    lista.innerHTML = coincidencias
-      .map((item) => `<li data-id="${item[campoId]}" data-texto="${textoDeItem(campoId, item)}">${textoDeItem(campoId, item)}</li>`)
-      .join('');
+    lista.innerHTML = html;
     lista.hidden = false;
   }
 
@@ -181,13 +243,19 @@ function conectarAutocompletarCampo(input, campoId) {
 
   // mousedown (no click) + preventDefault evita que el input pierda el foco
   // antes de registrar la seleccion, que es lo que ocultaria la lista primero.
-  lista.addEventListener('mousedown', (e) => {
+  lista.addEventListener('mousedown', async (e) => {
     const li = e.target.closest('li');
     if (!li) return;
     e.preventDefault();
+    lista.hidden = true;
+
+    if (li.dataset.crear) {
+      await crearDesdeAutocompletar(campoId, li.dataset.crear, input, inputOculto);
+      return;
+    }
+
     input.value = li.dataset.texto;
     inputOculto.value = li.dataset.id;
-    lista.hidden = true;
   });
 
   input.addEventListener('blur', () => {
@@ -352,6 +420,98 @@ document.getElementById('boton-eliminar-condiciones-defecto').addEventListener('
   }
 });
 
+// --- Configuración de IA (que proveedor usar y su API key) ---
+
+let modelosPorDefectoIA = {};
+let modelosGuardadosIA = {};
+
+function actualizarPlaceholderModeloIA() {
+  const form = document.getElementById('form-configuracion-ia');
+  const proveedor = campo(form, 'proveedor').value;
+  const campoModelo = campo(form, 'modelo');
+  campoModelo.value = modelosGuardadosIA[proveedor] || '';
+  campoModelo.placeholder = `Por defecto: ${modelosPorDefectoIA[proveedor] || '...'}`;
+}
+
+async function cargarConfiguracionIA() {
+  try {
+    const config = await obtenerJSON('/ia/configuracion');
+    const form = document.getElementById('form-configuracion-ia');
+    if (config.proveedor) campo(form, 'proveedor').value = config.proveedor;
+
+    modelosPorDefectoIA = config.modelosPorDefecto;
+    modelosGuardadosIA = config.modelos;
+    actualizarPlaceholderModeloIA();
+
+    const estado = document.getElementById('estado-configuracion-ia');
+    if (config.proveedoresConKey.length === 0) {
+      estado.textContent = 'Todavía no configuraste ninguna API key.';
+    } else {
+      estado.textContent = `Proveedor activo: ${config.proveedor}. Con API key guardada: ${config.proveedoresConKey.join(', ')}.`;
+    }
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  }
+}
+
+campo(document.getElementById('form-configuracion-ia'), 'proveedor').addEventListener('change', actualizarPlaceholderModeloIA);
+
+document.getElementById('form-configuracion-ia').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    await enviarJSON('/ia/configuracion', 'POST', datosFormulario(e.target));
+    campo(e.target, 'apiKey').value = '';
+    await cargarConfiguracionIA();
+    mostrarMensaje('Configuración de IA guardada', 'exito');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  }
+});
+
+document.getElementById('boton-eliminar-api-key').addEventListener('click', async () => {
+  const form = document.getElementById('form-configuracion-ia');
+  const proveedor = campo(form, 'proveedor').value;
+  if (!confirm(`¿Eliminar la API key guardada de ${proveedor}?`)) return;
+
+  try {
+    await fetch(`/ia/configuracion/${proveedor}`, { method: 'DELETE' });
+    campo(form, 'apiKey').value = '';
+    await cargarConfiguracionIA();
+    mostrarMensaje('API key eliminada', 'exito');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  }
+});
+
+async function cargarEstadisticasIA() {
+  try {
+    const stats = await obtenerJSON('/ia/estadisticas');
+    const contenedor = document.getElementById('estadisticas-ia');
+
+    if (stats.total === 0) {
+      contenedor.innerHTML = '<p class="texto-secundario">Todavía no se ha usado la extracción con IA.</p>';
+      return;
+    }
+
+    const filasProveedor = stats.porProveedor
+      .map(
+        (p) =>
+          `<li>${p.proveedor}: ${p.total} intento${p.total === 1 ? '' : 's'} (${p.exitosos} exitoso${p.exitosos === 1 ? '' : 's'})</li>`
+      )
+      .join('');
+
+    contenedor.innerHTML = `
+      <p><strong>${stats.total}</strong> extracción${stats.total === 1 ? '' : 'es'} en total ·
+      <strong>${stats.exitosos}</strong> exitosa${stats.exitosos === 1 ? '' : 's'} ·
+      <strong>${stats.fallidos}</strong> fallida${stats.fallidos === 1 ? '' : 's'}</p>
+      <ul class="lista-catalogo">${filasProveedor}</ul>
+      <p class="texto-secundario">Último uso: ${new Date(stats.ultimoUso).toLocaleString('es')}</p>
+    `;
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  }
+}
+
 // --- Subpestaña "Catálogos de apoyo": listas de lo ya registrado ---
 
 function listaOVacio(items, textoItem, endpoint, idField) {
@@ -420,6 +580,18 @@ document.querySelectorAll('.subpestana').forEach((boton) => {
     const subtab = boton.dataset.subtab;
     document.querySelectorAll('.subpestana').forEach((b) => b.classList.toggle('activa', b === boton));
     document.querySelectorAll('.subvista').forEach((v) => v.classList.toggle('activa', v.id === `subvista-${subtab}`));
+  });
+});
+
+// Subpestañas dentro de "Opciones" (por ahora solo "IA", pero deja espacio
+// para agregar mas configuraciones despues sin rehacer la navegacion).
+document.querySelectorAll('.subpestana-opciones').forEach((boton) => {
+  boton.addEventListener('click', () => {
+    const subtab = boton.dataset.subtabOpciones;
+    document.querySelectorAll('.subpestana-opciones').forEach((b) => b.classList.toggle('activa', b === boton));
+    document
+      .querySelectorAll('.subvista-opciones-contenido')
+      .forEach((v) => v.classList.toggle('activa', v.dataset.subtabOpcionesContenido === subtab));
   });
 });
 
@@ -678,112 +850,180 @@ async function eliminarServicioDesdeTabla(servicio) {
 
 // --- Plantilla de contenido para una pestaña de servicio ---
 
+let contadorFormulariosServicio = 0;
+
 function plantillaServicio(servicio) {
   const esNuevo = !servicio;
+  const idFormularioServicio = `form-servicio-${contadorFormulariosServicio++}`;
+
   return `
     <div class="subpestanas-servicio">
-      <button type="button" class="subpestana-servicio activa" data-subtab-servicio="info">Información básica</button>
-      <button type="button" class="subpestana-servicio" data-subtab-servicio="condiciones">Condiciones</button>
-      <button type="button" class="subpestana-servicio" data-subtab-servicio="incluye">Incluye / No incluye</button>
-      <button type="button" class="subpestana-servicio" data-subtab-servicio="documentos">Documentos</button>
+      <button type="button" class="subpestana-servicio activa" data-subtab-servicio="info">ⓘ Información básica</button>
+      <button type="button" class="subpestana-servicio" data-subtab-servicio="condiciones">⏱ Condiciones</button>
+      <button type="button" class="subpestana-servicio" data-subtab-servicio="incluye">☰ Incluye / No incluye</button>
+      <button type="button" class="subpestana-servicio" data-subtab-servicio="documentos">📄 Documentos</button>
     </div>
 
     <div class="subvista-servicio activa" data-subtab-servicio-contenido="info">
-      <div class="tarjeta">
-        <h3>Imagen de portada</h3>
-        <form class="form-portada portada-fila">
-          <label class="portada-actual" title="Clic para elegir una imagen">
-            <span class="portada-preview"><span class="miniatura-placeholder">🖼</span></span>
-            <input type="file" name="archivo" accept="image/*" required hidden />
+      ${
+        esNuevo
+          ? `
+      <div class="tarjeta tarjeta-ia">
+        <div class="tarjeta-ia-icono">🤖</div>
+        <div class="tarjeta-ia-texto">
+          <h3>Extraer datos con IA</h3>
+          <p class="texto-secundario">Sube una foto o afiche del servicio y la IA completará automáticamente los campos de abajo (podrás revisarlos antes de guardar).</p>
+        </div>
+        <div class="tarjeta-ia-acciones">
+          <label class="boton boton-outline">
+            ⬆ Subir imagen
+            <input type="file" class="campo-imagen-ia" accept="image/*" hidden />
           </label>
-          <div class="portada-campos">
-            <span class="portada-archivo-nombre texto-secundario">Ningún archivo elegido</span>
+          <button type="button" class="enlace-info boton-info-ia">Más información ⓘ</button>
+        </div>
+      </div>
+      <p class="texto-secundario estado-extraccion-ia"></p>
+      `
+          : ''
+      }
+
+      <form class="form-servicio" id="${idFormularioServicio}">
+        <div class="tarjeta">
+          <h2>📄 ${esNuevo ? 'Información básica' : 'Datos del servicio'}</h2>
+          <div class="grid-2">
+            <div>
+              <label>Nombre del servicio</label>
+              <input type="text" name="nombre" placeholder="Ej. City Tour por Cartagena" required value="${servicio?.nombre ?? ''}" />
+            </div>
             <div class="autocompletar">
-              <input type="text" class="campo-autocompletar" data-campo="id_tipo_archivo" placeholder="Tipo de archivo (imagen...)" autocomplete="off" required />
-              <input type="hidden" name="id_tipo_archivo" />
+              <label>Tipo de servicio</label>
+              <input type="text" class="campo-autocompletar" data-campo="id_tipo_servicio" placeholder="Selecciona un tipo" autocomplete="off" required />
+              <input type="hidden" name="id_tipo_servicio" />
               <ul class="sugerencias" hidden></ul>
             </div>
-            <button type="submit">Subir portada</button>
-          </div>
-        </form>
-      </div>
-
-      <div class="tarjeta">
-        <h2>${esNuevo ? 'Nuevo servicio' : 'Datos del servicio'}</h2>
-        <form class="form-servicio grid-2">
-          <div class="autocompletar">
-            <label>Tipo de servicio</label>
-            <input type="text" class="campo-autocompletar" data-campo="id_tipo_servicio" placeholder="Escribe o elige un tipo" autocomplete="off" required />
-            <input type="hidden" name="id_tipo_servicio" />
-            <ul class="sugerencias" hidden></ul>
-          </div>
-          <div class="autocompletar">
-            <label>Proveedor</label>
-            <input type="text" class="campo-autocompletar" data-campo="id_proveedor" placeholder="Escribe o elige un proveedor" autocomplete="off" required />
-            <input type="hidden" name="id_proveedor" />
-            <ul class="sugerencias" hidden></ul>
-          </div>
-          <div class="autocompletar">
-            <label>Destino (opcional)</label>
-            <input type="text" class="campo-autocompletar" data-campo="id_destino" placeholder="Escribe o elige un destino" autocomplete="off" />
-            <input type="hidden" name="id_destino" />
-            <ul class="sugerencias" hidden></ul>
-          </div>
-          <div>
-            <label>Nombre</label>
-            <input type="text" name="nombre" required value="${servicio?.nombre ?? ''}" />
-          </div>
-          <div class="col-span-2">
-            <label>Descripción</label>
-            <textarea name="descripcion">${servicio?.descripcion ?? ''}</textarea>
-          </div>
-          <div>
-            <label>Fecha de inicio</label>
-            <input type="date" name="fecha_inicio" value="${servicio?.fecha_inicio ?? ''}" />
-          </div>
-          <div>
-            <label>Fecha de fin</label>
-            <input type="date" name="fecha_fin" value="${servicio?.fecha_fin ?? ''}" />
-          </div>
-          <div>
-            <label>Duración (calculada)</label>
-            <input type="text" name="duracion" value="${servicio?.duracion ?? ''}" readonly />
-          </div>
-          <div>
-            <label>Estado</label>
-            <select name="estado">
-              <option value="activo">activo</option>
-              <option value="inactivo">inactivo</option>
-            </select>
-          </div>
-          ${
-            esNuevo
-              ? `
-            <div class="col-span-2 casilla-defectos">
-              <label><input type="checkbox" name="usar_defectos" value="si" checked /> Usar valores por defecto (incluye, no incluye y condiciones)</label>
+            <div class="autocompletar">
+              <label>Proveedor</label>
+              <input type="text" class="campo-autocompletar" data-campo="id_proveedor" placeholder="Ej. Andes Travel S.A.S." autocomplete="off" required />
+              <input type="hidden" name="id_proveedor" />
+              <ul class="sugerencias" hidden></ul>
             </div>
-          `
-              : ''
-          }
-          <div class="col-span-2">
-            <button type="submit">${esNuevo ? 'Guardar servicio' : 'Actualizar servicio'}</button>
+            <div class="autocompletar campo-con-icono">
+              <label>Destino</label>
+              <input type="text" class="campo-autocompletar" data-campo="id_destino" placeholder="Ej. Cartagena, Colombia" autocomplete="off" />
+              <input type="hidden" name="id_destino" />
+              <span class="icono-campo">📍</span>
+              <ul class="sugerencias" hidden></ul>
+            </div>
+            <div class="col-span-2">
+              <label>Estado</label>
+              <select name="estado">
+                <option value="activo">🟢 Activo</option>
+                <option value="inactivo">🔴 Inactivo</option>
+              </select>
+            </div>
+            <div class="col-span-2 campo-con-contador">
+              <label>Descripción</label>
+              <textarea name="descripcion" maxlength="1000" placeholder="Describe los detalles del servicio, qué incluye, recomendaciones, etc.">${servicio?.descripcion ?? ''}</textarea>
+              <span class="contador-caracteres">${(servicio?.descripcion ?? '').length} / 1000</span>
+            </div>
+            ${
+              esNuevo
+                ? `
+              <div class="col-span-2 casilla-defectos">
+                <label><input type="checkbox" name="usar_defectos" value="si" checked /> Usar valores por defecto (incluye, no incluye y condiciones)</label>
+              </div>
+            `
+                : ''
+            }
           </div>
-        </form>
-      </div>
+        </div>
+
+        <div class="tarjeta">
+          <div class="grid-3">
+            <div>
+              <label>Fecha de inicio</label>
+              <input type="date" name="fecha_inicio" value="${servicio?.fecha_inicio ?? ''}" />
+            </div>
+            <div>
+              <label>Fecha de fin</label>
+              <input type="date" name="fecha_fin" value="${servicio?.fecha_fin ?? ''}" />
+            </div>
+            <div>
+              <label>Duración (calculada)</label>
+              <input type="text" class="campo-bloqueado" name="duracion" value="${servicio?.duracion ?? ''}" placeholder="— — —" readonly />
+            </div>
+          </div>
+        </div>
+      </form>
 
       <div class="tarjeta">
-        <h3>Tarifas</h3>
-        <form class="form-tarifa grid-2">
-          <input type="text" name="nombre_tarifa" placeholder="Nombre tarifa (adulto, niño...)" required />
-          <input type="number" step="0.01" name="precio_base" placeholder="Precio" required />
-          <input type="text" name="moneda" placeholder="USD, DOP..." />
-          <select name="estado">
-            <option value="activo">activo</option>
-            <option value="inactivo">inactivo</option>
-          </select>
-          <button type="submit" class="col-span-2">Agregar tarifa</button>
+        <div class="tarjeta-header">
+          <div>
+            <h3>🏷 Tarifas</h3>
+            <p class="texto-secundario">Define las tarifas disponibles para este servicio.</p>
+          </div>
+        </div>
+        <form class="form-tarifa">
+          <table class="tabla-tarifas">
+            <thead>
+              <tr>
+                <th>Nombre tarifa</th>
+                <th>Precio</th>
+                <th>Moneda</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input type="text" name="nombre_tarifa" placeholder="Ej. Adulto" required /></td>
+                <td><input type="number" step="0.01" min="0" name="precio_base" placeholder="0.00" required /></td>
+                <td><input type="text" name="moneda" placeholder="USD" /></td>
+                <td>
+                  <select name="estado">
+                    <option value="activo">🟢 Activo</option>
+                    <option value="inactivo">🔴 Inactivo</option>
+                  </select>
+                </td>
+                <td><button type="submit" class="boton-outline">+ Agregar</button></td>
+              </tr>
+            </tbody>
+            <tbody class="lista-tarifas"></tbody>
+          </table>
         </form>
-        <ul class="lista-tarifas"></ul>
+        <p class="texto-secundario">ℹ️ Puedes agregar múltiples tarifas para este servicio.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="tarjeta">
+          <h3>🖼 Imagen de portada</h3>
+          <label class="zona-arrastrar zona-portada">
+            <span class="icono-subir">⬆</span>
+            <span>Arrastra y suelta una imagen aquí</span>
+            <span class="enlace-info">o haz clic para seleccionar</span>
+            <small>JPG, PNG o WebP. Máx. 5 MB.</small>
+            <input type="file" class="campo-subir-portada" accept="image/*" hidden />
+          </label>
+          <div class="portada-preview-fila">
+            <span class="portada-preview"></span>
+          </div>
+        </div>
+
+        <div class="tarjeta">
+          <h3>📄 Documentos</h3>
+          <label class="zona-arrastrar zona-documentos">
+            <span class="icono-subir">⬆</span>
+            <span>Arrastra y suelta archivos aquí</span>
+            <span class="enlace-info">o haz clic para seleccionar</span>
+            <small>Imágenes o PDF. Un archivo a la vez. Se agregan a la pestaña "Documentos".</small>
+            <input type="file" class="campo-subir-documento" accept="image/*,application/pdf" hidden />
+          </label>
+        </div>
+      </div>
+
+      <div class="barra-acciones-servicio">
+        <button type="button" class="secundario boton-cancelar-servicio">Cancelar</button>
+        <button type="submit" form="${idFormularioServicio}">💾 ${esNuevo ? 'Guardar servicio' : 'Actualizar servicio'}</button>
       </div>
     </div>
 
@@ -855,7 +1095,17 @@ function liConBorrar(texto, idItem) {
 async function cargarTarifas(seccion, idServicio) {
   const tarifas = await obtenerJSON(`/servicios/${idServicio}/tarifas`);
   seccion.querySelector('.lista-tarifas').innerHTML = tarifas
-    .map((t) => liConBorrar(`${t.nombre_tarifa}: ${t.precio_base} ${t.moneda || ''}`, t.id_tarifa))
+    .map(
+      (t) => `
+        <tr>
+          <td>${t.nombre_tarifa}</td>
+          <td>${t.precio_base}</td>
+          <td>${t.moneda || ''}</td>
+          <td><span class="badge ${t.estado}">${t.estado || '-'}</span></td>
+          <td><button type="button" class="boton-borrar-fila eliminar-item" data-id="${t.id_tarifa}">🗑</button></td>
+        </tr>
+      `
+    )
     .join('');
 }
 
@@ -906,6 +1156,82 @@ function inicializarSubpestanasServicio(seccion) {
   });
 }
 
+// Copia lo que devolvio la IA a los campos del formulario. Los campos de
+// texto (tipo/proveedor/destino) se llenan tal cual: si coinciden con un
+// registro existente el autocompletar resuelve el id solo, si no, el usuario
+// vera el aviso normal de "agrégalo en Catálogos de apoyo" al guardar.
+// Tarifas/incluye/no incluye/condiciones se guardan aparte (seccion.datosExtraidosIA)
+// porque necesitan que el servicio ya tenga id, y eso pasa recien al guardar.
+function aplicarDatosExtraidosIA(seccion, formServicio, datos) {
+  if (datos.nombre) formServicio.querySelector('[name="nombre"]').value = datos.nombre;
+  if (datos.descripcion) {
+    campo(formServicio, 'descripcion').value = datos.descripcion;
+    campo(formServicio, 'descripcion').dispatchEvent(new Event('input'));
+  }
+  if (datos.fecha_inicio) campo(formServicio, 'fecha_inicio').value = datos.fecha_inicio;
+  if (datos.fecha_fin) campo(formServicio, 'fecha_fin').value = datos.fecha_fin;
+  campo(formServicio, 'fecha_inicio').dispatchEvent(new Event('change'));
+
+  const camposTexto = {
+    id_tipo_servicio: datos.tipo_servicio,
+    id_proveedor: datos.proveedor,
+    id_destino: datos.destino,
+  };
+  Object.entries(camposTexto).forEach(([campoId, valor]) => {
+    if (!valor) return;
+    const input = seccion.querySelector(`[data-campo="${campoId}"]`);
+    input.value = valor;
+    input.dispatchEvent(new Event('input'));
+  });
+
+  seccion.datosExtraidosIA = {
+    tarifas: datos.tarifas || [],
+    incluye: datos.incluye || [],
+    no_incluye: datos.no_incluye || [],
+    condiciones: datos.condiciones || null,
+  };
+}
+
+// Una vez que el servicio ya tiene id (recien creado), guarda lo que la IA
+// extrajo de tarifas/incluye/no incluye/condiciones.
+async function guardarDatosExtraidosIA(idServicio, datos) {
+  const tareas = [];
+
+  datos.tarifas.forEach((tarifa) => {
+    if (!tarifa.nombre_tarifa || tarifa.precio_base == null) return;
+    tareas.push(
+      enviarJSON(`/servicios/${idServicio}/tarifas`, 'POST', {
+        nombre_tarifa: tarifa.nombre_tarifa,
+        precio_base: tarifa.precio_base,
+        moneda: tarifa.moneda || '',
+        estado: 'activo',
+      })
+    );
+  });
+
+  datos.incluye.forEach((texto) => {
+    if (texto) tareas.push(enviarJSON(`/servicios/${idServicio}/incluidos`, 'POST', { descripcion: texto }));
+  });
+
+  datos.no_incluye.forEach((texto) => {
+    if (texto) tareas.push(enviarJSON(`/servicios/${idServicio}/no-incluidos`, 'POST', { descripcion: texto }));
+  });
+
+  const c = datos.condiciones;
+  if (c && (c.politica_cancelacion || c.requisitos || c.notas)) {
+    // Si tambien se aplicaron valores por defecto, ya existe una fila de
+    // condiciones: se borra primero para que la de la IA quede como la unica
+    // (si no, quedarian dos filas y solo se veria la primera).
+    tareas.push(
+      fetch(`/servicios/${idServicio}/condiciones`, { method: 'DELETE' }).then(() =>
+        enviarJSON(`/servicios/${idServicio}/condiciones`, 'POST', c)
+      )
+    );
+  }
+
+  await Promise.all(tareas);
+}
+
 // --- Conecta los formularios de una pestaña de servicio con la API ---
 
 function inicializarSeccionServicio(seccion, servicio) {
@@ -927,6 +1253,31 @@ function inicializarSeccionServicio(seccion, servicio) {
   }
   campo(formServicio, 'fecha_inicio').addEventListener('change', actualizarDuracion);
   campo(formServicio, 'fecha_fin').addEventListener('change', actualizarDuracion);
+
+  // Solo existe en la pestaña de "Nuevo servicio": sube una imagen a la IA y
+  // usa lo que devuelva para rellenar el formulario (revisable antes de guardar).
+  const inputImagenIA = seccion.querySelector('.campo-imagen-ia');
+  if (inputImagenIA) {
+    inputImagenIA.addEventListener('change', async () => {
+      const archivo = inputImagenIA.files[0];
+      if (!archivo) return;
+
+      const estado = seccion.querySelector('.estado-extraccion-ia');
+      estado.textContent = 'Analizando imagen con IA...';
+      try {
+        const formData = new FormData();
+        formData.append('imagen', archivo);
+        const datos = await enviarFormDataConError('/ia/extraer-imagen', formData);
+        aplicarDatosExtraidosIA(seccion, formServicio, datos);
+        estado.textContent = 'Datos rellenados. Revísalos antes de guardar.';
+      } catch (error) {
+        estado.textContent = '';
+        mostrarMensaje(error.message, 'error');
+      } finally {
+        cargarEstadisticasIA();
+      }
+    });
+  }
 
   if (servicio) {
     seccion.querySelector('[data-campo="id_tipo_servicio"]').value = valorMostrado(
@@ -979,6 +1330,11 @@ function inicializarSeccionServicio(seccion, servicio) {
         const boton = document.querySelector(`.pestana[data-tab="${tabAnterior}"]`);
         boton.dataset.tab = String(idServicioActual);
         boton.querySelector('.pestana-texto').textContent = data.nombre;
+
+        if (seccion.datosExtraidosIA) {
+          await guardarDatosExtraidosIA(idServicioActual, seccion.datosExtraidosIA);
+          seccion.datosExtraidosIA = null;
+        }
 
         await Promise.all([
           cargarTarifas(seccion, idServicioActual),
@@ -1045,25 +1401,74 @@ function inicializarSeccionServicio(seccion, servicio) {
     }
   });
 
-  seccion.querySelector('.form-portada').addEventListener('submit', async (e) => {
-    e.preventDefault();
+  // Sube un archivo automaticamente (sin pedir tipo de archivo: se adivina
+  // solo por el mime-type) apenas se elige o se suelta sobre la zona.
+  async function subirArchivoAutomatico(archivo, uso) {
     if (requiereServicioGuardado(idServicioActual)) return;
     try {
-      const formData = new FormData(e.target);
-      if (!formData.get('id_tipo_archivo')) {
-        throw new Error('Escribe un tipo de archivo ya registrado (agrégalo en Catálogos de apoyo si no existe).');
-      }
-      formData.set('uso', 'portada');
+      const idTipoArchivo = await inferirTipoArchivo(archivo.type);
+      const formData = new FormData();
+      formData.append('archivo', archivo);
+      formData.append('id_tipo_archivo', idTipoArchivo);
+      formData.append('uso', uso);
       await enviarFormData(`/servicios/${idServicioActual}/archivos`, formData);
-      e.target.reset();
       await cargarArchivos(seccion, idServicioActual);
-      mostrarMensaje('Portada actualizada', 'exito');
+      mostrarMensaje(uso === 'portada' ? 'Portada actualizada' : 'Documento subido', 'exito');
     } catch (error) {
       mostrarMensaje(error.message, 'error');
     }
+  }
+
+  // Conecta una "zona de arrastrar y soltar": funciona con clic (el <label>
+  // ya abre el selector nativo) y con arrastrar un archivo encima.
+  function conectarZonaArrastrar(zona, inputArchivo, uso) {
+    inputArchivo.addEventListener('change', () => {
+      if (inputArchivo.files[0]) subirArchivoAutomatico(inputArchivo.files[0], uso);
+    });
+    zona.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      zona.classList.add('arrastrando');
+    });
+    zona.addEventListener('dragleave', () => zona.classList.remove('arrastrando'));
+    zona.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zona.classList.remove('arrastrando');
+      if (e.dataTransfer.files[0]) subirArchivoAutomatico(e.dataTransfer.files[0], uso);
+    });
+  }
+
+  const zonaPortada = seccion.querySelector('.zona-portada');
+  conectarZonaArrastrar(zonaPortada, zonaPortada.querySelector('.campo-subir-portada'), 'portada');
+
+  const zonaDocumentos = seccion.querySelector('.zona-documentos');
+  conectarZonaArrastrar(zonaDocumentos, zonaDocumentos.querySelector('.campo-subir-documento'), 'documento');
+
+  // Contador de caracteres de la descripcion.
+  const areaDescripcion = campo(formServicio, 'descripcion');
+  const contadorDescripcion = seccion.querySelector('.contador-caracteres');
+  areaDescripcion.addEventListener('input', () => {
+    contadorDescripcion.textContent = `${areaDescripcion.value.length} / ${areaDescripcion.maxLength}`;
   });
 
-  seccion.querySelector('.form-archivo').addEventListener('submit', async (e) => {
+  seccion.querySelector('.boton-cancelar-servicio')?.addEventListener('click', () => {
+    cerrarPestana(seccion.dataset.tab);
+  });
+
+  seccion.querySelector('.boton-info-ia')?.addEventListener('click', () => {
+    mostrarMensaje(
+      'Sube una foto o afiche del servicio: la IA leerá la imagen e intentará completar nombre, fechas, tipo, proveedor, destino, tarifas, incluye/no incluye y condiciones. Podrás revisar y corregir todo antes de guardar.',
+      'exito'
+    );
+  });
+
+  seccion.querySelector('.campo-imagen-ia')?.addEventListener('change', function () {
+    if (this.files[0] && this.files[0].type === 'application/pdf') {
+      mostrarMensaje('La extracción con IA por ahora solo funciona con imágenes. Sube el PDF directo en la pestaña "Documentos".', 'error');
+      this.value = '';
+    }
+  });
+
+  seccion.querySelector('.form-archivo')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (requiereServicioGuardado(idServicioActual)) return;
     try {
@@ -1078,12 +1483,6 @@ function inicializarSeccionServicio(seccion, servicio) {
     } catch (error) {
       mostrarMensaje(error.message, 'error');
     }
-  });
-
-  // Muestra el nombre del archivo elegido para la portada (el input queda oculto).
-  seccion.querySelector('.form-portada [name="archivo"]').addEventListener('change', (e) => {
-    const nombre = e.target.files[0]?.name || 'Ningún archivo elegido';
-    seccion.querySelector('.portada-archivo-nombre').textContent = nombre;
   });
 
   seccion.querySelector('.boton-eliminar-condiciones').addEventListener('click', async () => {
@@ -1183,4 +1582,6 @@ document.getElementById('boton-nuevo-servicio').addEventListener('click', abrirN
 cargarCatalogos();
 cargarDefectos();
 cargarPaises();
+cargarConfiguracionIA();
+cargarEstadisticasIA();
 cargarServicios();
