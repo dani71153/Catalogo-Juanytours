@@ -22,6 +22,20 @@ const ICONO_INFO = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" 
 // Icono de robot (para la tarjeta "Extraer datos con IA").
 const ICONO_ROBOT = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"></rect><path d="M12 8V4"></path><circle cx="12" cy="3" r="1"></circle><line x1="8.5" y1="13" x2="8.5" y2="15"></line><line x1="15.5" y1="13" x2="15.5" y2="15"></line></svg>`;
 
+// Iconos de los encabezados de "Detalles del servicio".
+const ICONO_ESCUDO = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>`;
+const ICONO_CHECKLIST = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>`;
+const ICONO_DOCUMENTO = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
+
+// Iconos de linea para los items de incluye / no incluye y acciones.
+const ICONO_CHECK_CIRCULO = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+const ICONO_EQUIS_CIRCULO = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+const ICONO_DESCARGAR = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+
+// Iconos de archivo en la tabla de documentos (PDF en rojo, imagen en azul).
+const ICONO_PDF = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e5484d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 13h1.5a1.5 1.5 0 0 1 0 3H9v-3z" stroke-width="1.4"></path><path d="M9 13v4" stroke-width="1.4"></path></svg>`;
+const ICONO_IMAGEN = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
+
 // --- Mensajes de exito / error ---
 
 let temporizadorMensaje = null;
@@ -878,11 +892,16 @@ function plantillaServicio(servicio) {
   const idFormularioTarifa = `form-tarifa-${sufijoFormularios}`;
 
   return `
+    <div class="servicio-layout">
+    <aside class="panel-portada">
+      <h4>Portada</h4>
+      <div class="portada-preview preview-lateral"><span class="miniatura-placeholder">🖼</span></div>
+      <p class="texto-secundario">Se define en "Información básica".</p>
+    </aside>
+    <div class="servicio-contenido">
     <div class="subpestanas-servicio">
-      <button type="button" class="subpestana-servicio activa" data-subtab-servicio="info">ⓘ Información básica</button>
-      <button type="button" class="subpestana-servicio" data-subtab-servicio="condiciones">⏱ Condiciones</button>
-      <button type="button" class="subpestana-servicio" data-subtab-servicio="incluye">☰ Incluye / No incluye</button>
-      <button type="button" class="subpestana-servicio" data-subtab-servicio="documentos">📄 Documentos</button>
+      <button type="button" class="subpestana-servicio activa" data-subtab-servicio="info">${ICONO_INFO} Información básica</button>
+      <button type="button" class="subpestana-servicio" data-subtab-servicio="detalles">${ICONO_CHECKLIST} Detalles del servicio</button>
     </div>
 
     <div class="subvista-servicio activa" data-subtab-servicio-contenido="info">
@@ -1016,11 +1035,17 @@ function plantillaServicio(servicio) {
         <p class="texto-secundario">ℹ️ Puedes agregar múltiples tarifas para este servicio.</p>
       </div>
 
-      <div class="grid-2">
-        <div class="tarjeta">
-          <h3>🖼 Imagen de portada</h3>
+      <div class="tarjeta">
+        <div class="tarjeta-titulo-icono">
+          <span class="icono-encabezado">🖼</span>
+          <div>
+            <h3>Imagen de portada</h3>
+            <p class="texto-secundario">Se usa como imagen principal del servicio en el catálogo y la ficha.</p>
+          </div>
+        </div>
+        <div class="portada-fila">
           <label class="zona-arrastrar zona-portada">
-            <span class="icono-subir">⬆</span>
+            <span class="icono-subir">${ICONO_SUBIR}</span>
             <span>Arrastra y suelta una imagen aquí</span>
             <span class="enlace-info">o haz clic para seleccionar</span>
             <small>JPG, PNG o WebP. Máx. 5 MB.</small>
@@ -1030,17 +1055,6 @@ function plantillaServicio(servicio) {
             <span class="portada-preview"></span>
           </div>
         </div>
-
-        <div class="tarjeta">
-          <h3>📄 Documentos</h3>
-          <label class="zona-arrastrar zona-documentos">
-            <span class="icono-subir">⬆</span>
-            <span>Arrastra y suelta archivos aquí</span>
-            <span class="enlace-info">o haz clic para seleccionar</span>
-            <small>Imágenes o PDF. Un archivo a la vez. Se agregan a la pestaña "Documentos".</small>
-            <input type="file" class="campo-subir-documento" accept="image/*,application/pdf" hidden />
-          </label>
-        </div>
       </div>
 
       <div class="barra-acciones-servicio">
@@ -1049,60 +1063,129 @@ function plantillaServicio(servicio) {
       </div>
     </div>
 
-    <div class="subvista-servicio" data-subtab-servicio-contenido="condiciones">
-      <div class="tarjeta">
-        <h3>Condiciones</h3>
-        <form class="form-condiciones">
-          <textarea name="politica_cancelacion" placeholder="Política de cancelación"></textarea>
-          <textarea name="requisitos" placeholder="Requisitos"></textarea>
-          <textarea name="notas" placeholder="Notas"></textarea>
-          <button type="submit">Guardar condiciones</button>
-          <button type="button" class="secundario boton-eliminar-condiciones">Eliminar condiciones</button>
-        </form>
+    <div class="subvista-servicio" data-subtab-servicio-contenido="detalles">
+      <div class="encabezado-detalles">
+        <h2>Detalles del servicio</h2>
+        <p class="texto-secundario">Administra condiciones, inclusiones y archivos del servicio en una sola vista.</p>
       </div>
-    </div>
 
-    <div class="subvista-servicio" data-subtab-servicio-contenido="incluye">
-      <div class="grid-2">
-        <div class="tarjeta">
-          <h3>Incluye</h3>
-          <form class="form-incluido">
-            <input type="text" name="descripcion" placeholder="Ej: Almuerzo buffet" required />
-            <button type="submit">Agregar</button>
-          </form>
-          <ul class="lista-incluidos"></ul>
-        </div>
-
-        <div class="tarjeta">
-          <h3>No incluye</h3>
-          <form class="form-no-incluido">
-            <input type="text" name="descripcion" placeholder="Ej: Propinas" required />
-            <button type="submit">Agregar</button>
-          </form>
-          <ul class="lista-no-incluidos"></ul>
-        </div>
-      </div>
-    </div>
-
-    <div class="subvista-servicio" data-subtab-servicio-contenido="documentos">
       <div class="tarjeta">
-        <h3>Documentos</h3>
-        <form class="form-archivo grid-2">
-          <input type="file" name="archivo" required />
-          <div class="autocompletar">
-            <input type="text" class="campo-autocompletar" data-campo="id_tipo_archivo" placeholder="Escribe o elige un tipo de archivo" autocomplete="off" required />
-            <input type="hidden" name="id_tipo_archivo" />
-            <ul class="sugerencias" hidden></ul>
+        <div class="tarjeta-titulo-icono">
+          <span class="icono-encabezado">${ICONO_ESCUDO}</span>
+          <div>
+            <h3>Condiciones</h3>
+            <p class="texto-secundario">Define la política de cancelación, requisitos y notas importantes del servicio.</p>
           </div>
-          <select name="uso">
-            <option value="documento">documento</option>
-            <option value="galeria">galeria</option>
-            <option value="condiciones">condiciones</option>
-          </select>
-          <button type="submit" class="col-span-2">Subir documento</button>
+        </div>
+        <form class="form-condiciones" id="form-condiciones-${sufijoFormularios}">
+          <div class="campo-condicion">
+            <label>Política de cancelación</label>
+            <div class="campo-con-contador">
+              <textarea name="politica_cancelacion" maxlength="1000" placeholder="Ej. La cancelación debe realizarse con al menos 48 horas de anticipación para reembolso completo."></textarea>
+              <span class="contador-caracteres">0 / 1000</span>
+            </div>
+          </div>
+          <div class="campo-condicion">
+            <label>Requisitos</label>
+            <div class="campo-con-contador">
+              <textarea name="requisitos" maxlength="1000" placeholder="Ej. Pasaporte vigente, confirmación de reserva, vacunación según destino."></textarea>
+              <span class="contador-caracteres">0 / 1000</span>
+            </div>
+          </div>
+          <div class="campo-condicion">
+            <label>Notas</label>
+            <div class="campo-con-contador">
+              <textarea name="notas" maxlength="1000" placeholder="Ej. Llevar ropa cómoda, protector solar y documento de identidad."></textarea>
+              <span class="contador-caracteres">0 / 1000</span>
+            </div>
+          </div>
         </form>
-        <ul class="lista-archivos"></ul>
       </div>
+
+      <div class="tarjeta">
+        <div class="tarjeta-titulo-icono">
+          <span class="icono-encabezado">${ICONO_CHECKLIST}</span>
+          <div>
+            <h3>Incluye / No incluye</h3>
+            <p class="texto-secundario">Administra los servicios que están incluidos y los que no están incluidos.</p>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="panel-incluye">
+            <h4 class="titulo-incluye"><span class="icono-verde">${ICONO_CHECK_CIRCULO}</span> Incluye</h4>
+            <form class="form-incluido fila-agregar">
+              <input type="text" name="descripcion" placeholder="Ej. Transporte ida y vuelta" required />
+              <button type="submit">Agregar</button>
+            </form>
+            <ul class="lista-incluidos lista-items"></ul>
+          </div>
+
+          <div class="panel-incluye">
+            <h4 class="titulo-no-incluye"><span class="icono-rojo">${ICONO_EQUIS_CIRCULO}</span> No incluye</h4>
+            <form class="form-no-incluido fila-agregar">
+              <input type="text" name="descripcion" placeholder="Ej. Propinas" required />
+              <button type="submit">Agregar</button>
+            </form>
+            <ul class="lista-no-incluidos lista-items"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="tarjeta">
+        <div class="tarjeta-titulo-icono">
+          <span class="icono-encabezado">${ICONO_DOCUMENTO}</span>
+          <div>
+            <h3>Documentos</h3>
+            <p class="texto-secundario">Sube y administra los documentos relacionados con el servicio.</p>
+          </div>
+          <div class="documentos-subir">
+            <div class="documentos-subir-campo">
+              <label>Tipo de archivo</label>
+              <select class="select-tipo-documento">
+                <option value="">Selecciona un tipo</option>
+              </select>
+            </div>
+            <div class="documentos-subir-campo">
+              <label>Archivo</label>
+              <div class="elegir-archivo-fila">
+                <label class="boton secundario boton-elegir-archivo">
+                  Elegir archivo
+                  <input type="file" class="campo-subir-documento" accept="image/*,application/pdf" hidden />
+                </label>
+                <span class="nombre-archivo-elegido texto-secundario">Ningún archivo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="documentos-cuerpo">
+          <label class="zona-arrastrar zona-documentos">
+            <span class="icono-subir">${ICONO_SUBIR}</span>
+            <span>Arrastra y suelta archivos aquí</span>
+            <span class="enlace-info">o haz clic para seleccionar</span>
+            <small>PDF, JPG, PNG. Máx. 10 MB por archivo.</small>
+            <input type="file" class="campo-soltar-documento" accept="image/*,application/pdf" hidden />
+          </label>
+          <table class="tabla-documentos">
+            <thead>
+              <tr>
+                <th>Archivo</th>
+                <th>Tipo</th>
+                <th>Tamaño</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="lista-archivos"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="barra-acciones-servicio">
+        <button type="button" class="secundario boton-cancelar-servicio">Cancelar</button>
+        <button type="submit" form="form-condiciones-${sufijoFormularios}">💾 Guardar cambios</button>
+      </div>
+    </div>
+    </div>
     </div>
   `;
 }
@@ -1139,29 +1222,59 @@ async function cargarCondiciones(seccion, idServicio) {
   campo(form, 'notas').value = condiciones?.notas || '';
 }
 
+// Un item de incluye/no incluye: icono (check verde o X roja) + texto + basurero.
+function liItemIncluye(icono, texto, idItem) {
+  return `<li><span class="item-texto">${icono}<span>${texto}</span></span><button type="button" class="boton-borrar-fila eliminar-item" data-id="${idItem}" title="Eliminar">${ICONO_BASURERO}</button></li>`;
+}
+
 async function cargarIncluidos(seccion, idServicio) {
   const incluidos = await obtenerJSON(`/servicios/${idServicio}/incluidos`);
   const noIncluidos = await obtenerJSON(`/servicios/${idServicio}/no-incluidos`);
   seccion.querySelector('.lista-incluidos').innerHTML = incluidos
-    .map((i) => liConBorrar(i.descripcion, i.id_incluido))
+    .map((i) => liItemIncluye(`<span class="icono-verde">${ICONO_CHECK_CIRCULO}</span>`, i.descripcion, i.id_incluido))
     .join('');
   seccion.querySelector('.lista-no-incluidos').innerHTML = noIncluidos
-    .map((i) => liConBorrar(i.descripcion, i.id_no_incluido))
+    .map((i) => liItemIncluye(`<span class="icono-rojo">${ICONO_EQUIS_CIRCULO}</span>`, i.descripcion, i.id_no_incluido))
     .join('');
 }
 
-// Carga la lista de archivos del servicio y de paso actualiza la miniatura
-// de portada (si alguno de esos archivos tiene uso = "portada").
+// Convierte bytes a un texto legible (KB / MB).
+function formatearTamano(bytes) {
+  if (!bytes) return '-';
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+// Carga la lista de archivos del servicio: los documentos van a la tabla, y la
+// imagen con uso "portada" actualiza la miniatura de portada.
 async function cargarArchivos(seccion, idServicio) {
   const archivos = await obtenerJSON(`/servicios/${idServicio}/archivos`);
-  seccion.querySelector('.lista-archivos').innerHTML = archivos
-    .map((a) => liConBorrar(`<a href="${a.url_archivo}" target="_blank">${a.nombre_original}</a> (${a.uso})`, a.id_archivo))
-    .join('');
+  const documentos = archivos.filter((a) => a.uso !== 'portada');
+
+  seccion.querySelector('.lista-archivos').innerHTML = documentos.length
+    ? documentos
+        .map(
+          (a) => `
+        <tr>
+          <td class="celda-archivo">${a.mime_type === 'application/pdf' ? ICONO_PDF : ICONO_IMAGEN} ${a.nombre_original}</td>
+          <td>${a.uso}</td>
+          <td>${formatearTamano(a.tamano_bytes)}</td>
+          <td><span class="badge activo">Subido</span></td>
+          <td class="acciones-documento">
+            <a class="boton-accion-doc" href="${a.url_archivo}" download title="Descargar">${ICONO_DESCARGAR}</a>
+            <button type="button" class="boton-borrar-fila eliminar-item" data-id="${a.id_archivo}" title="Eliminar">${ICONO_BASURERO}</button>
+          </td>
+        </tr>`
+        )
+        .join('')
+    : `<tr><td colspan="5" class="texto-secundario" style="text-align:center">Aún no hay documentos.</td></tr>`;
 
   const portada = archivos.find((a) => a.uso === 'portada');
-  seccion.querySelector('.portada-preview').innerHTML = portada
+  const htmlPortada = portada
     ? `<img src="${portada.url_archivo}" alt="Portada" />`
     : '<span class="miniatura-placeholder">🖼</span>';
+  // Hay dos previsualizaciones: la del panel lateral y la del area de subida.
+  seccion.querySelectorAll('.portada-preview').forEach((el) => (el.innerHTML = htmlPortada));
 }
 
 // Cambia entre las sub-pestañas (Información básica / Condiciones /
@@ -1390,8 +1503,10 @@ function inicializarSeccionServicio(seccion, servicio) {
     e.preventDefault();
     if (requiereServicioGuardado(idServicioActual)) return;
     try {
+      // Se borra la fila previa antes de guardar para no acumular duplicados.
+      await fetch(`/servicios/${idServicioActual}/condiciones`, { method: 'DELETE' });
       await enviarJSON(`/servicios/${idServicioActual}/condiciones`, 'POST', datosFormulario(e.target));
-      mostrarMensaje('Condiciones guardadas', 'exito');
+      mostrarMensaje('Cambios guardados', 'exito');
     } catch (error) {
       mostrarMensaje(error.message, 'error');
     }
@@ -1423,12 +1538,12 @@ function inicializarSeccionServicio(seccion, servicio) {
     }
   });
 
-  // Sube un archivo automaticamente (sin pedir tipo de archivo: se adivina
-  // solo por el mime-type) apenas se elige o se suelta sobre la zona.
-  async function subirArchivoAutomatico(archivo, uso) {
+  // Sube un archivo al servicio. Para portada/documentos, si no se paso un
+  // tipo de archivo se adivina solo por el mime-type.
+  async function subirArchivo(archivo, uso, idTipoArchivoForzado) {
     if (requiereServicioGuardado(idServicioActual)) return;
     try {
-      const idTipoArchivo = await inferirTipoArchivo(archivo.type);
+      const idTipoArchivo = idTipoArchivoForzado || (await inferirTipoArchivo(archivo.type));
       const formData = new FormData();
       formData.append('archivo', archivo);
       formData.append('id_tipo_archivo', idTipoArchivo);
@@ -1443,9 +1558,9 @@ function inicializarSeccionServicio(seccion, servicio) {
 
   // Conecta una "zona de arrastrar y soltar": funciona con clic (el <label>
   // ya abre el selector nativo) y con arrastrar un archivo encima.
-  function conectarZonaArrastrar(zona, inputArchivo, uso) {
+  function conectarZonaArrastrar(zona, inputArchivo, alElegir) {
     inputArchivo.addEventListener('change', () => {
-      if (inputArchivo.files[0]) subirArchivoAutomatico(inputArchivo.files[0], uso);
+      if (inputArchivo.files[0]) alElegir(inputArchivo.files[0]);
     });
     zona.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -1455,25 +1570,54 @@ function inicializarSeccionServicio(seccion, servicio) {
     zona.addEventListener('drop', (e) => {
       e.preventDefault();
       zona.classList.remove('arrastrando');
-      if (e.dataTransfer.files[0]) subirArchivoAutomatico(e.dataTransfer.files[0], uso);
+      if (e.dataTransfer.files[0]) alElegir(e.dataTransfer.files[0]);
     });
   }
 
+  // --- Portada (en Información básica) ---
   const zonaPortada = seccion.querySelector('.zona-portada');
-  conectarZonaArrastrar(zonaPortada, zonaPortada.querySelector('.campo-subir-portada'), 'portada');
+  conectarZonaArrastrar(zonaPortada, zonaPortada.querySelector('.campo-subir-portada'), (a) => subirArchivo(a, 'portada'));
 
-  const zonaDocumentos = seccion.querySelector('.zona-documentos');
-  conectarZonaArrastrar(zonaDocumentos, zonaDocumentos.querySelector('.campo-subir-documento'), 'documento');
-
-  // Contador de caracteres de la descripcion.
-  const areaDescripcion = campo(formServicio, 'descripcion');
-  const contadorDescripcion = seccion.querySelector('.contador-caracteres');
-  areaDescripcion.addEventListener('input', () => {
-    contadorDescripcion.textContent = `${areaDescripcion.value.length} / ${areaDescripcion.maxLength}`;
+  // --- Documentos (en Detalles del servicio) ---
+  const selectTipoDoc = seccion.querySelector('.select-tipo-documento');
+  catalogoTiposArchivo.forEach((t) => {
+    const option = document.createElement('option');
+    option.value = t.id_tipo_archivo;
+    option.textContent = t.nombre;
+    selectTipoDoc.appendChild(option);
   });
 
-  seccion.querySelector('.boton-cancelar-servicio')?.addEventListener('click', () => {
-    cerrarPestana(seccion.dataset.tab);
+  // Usa el tipo elegido en el select; si no hay ninguno, lo infiere del archivo.
+  function subirDocumento(archivo) {
+    const idTipo = selectTipoDoc.value ? Number(selectTipoDoc.value) : null;
+    subirArchivo(archivo, 'documento', idTipo);
+  }
+
+  const zonaDocumentos = seccion.querySelector('.zona-documentos');
+  conectarZonaArrastrar(zonaDocumentos, zonaDocumentos.querySelector('.campo-soltar-documento'), subirDocumento);
+
+  // Boton "Elegir archivo": muestra el nombre y sube al elegirlo.
+  const inputElegirDoc = seccion.querySelector('.campo-subir-documento');
+  inputElegirDoc.addEventListener('change', () => {
+    const archivo = inputElegirDoc.files[0];
+    if (!archivo) return;
+    seccion.querySelector('.nombre-archivo-elegido').textContent = archivo.name;
+    subirDocumento(archivo);
+  });
+
+  // Contadores de caracteres: descripcion (info) y las 3 condiciones (detalles).
+  seccion.querySelectorAll('.campo-con-contador').forEach((contenedor) => {
+    const area = contenedor.querySelector('textarea');
+    const contador = contenedor.querySelector('.contador-caracteres');
+    if (!area || !contador) return;
+    area.addEventListener('input', () => {
+      contador.textContent = `${area.value.length} / ${area.maxLength}`;
+    });
+  });
+
+  // Cada pestaña (Información básica y Detalles) tiene su boton Cancelar.
+  seccion.querySelectorAll('.boton-cancelar-servicio').forEach((boton) => {
+    boton.addEventListener('click', () => cerrarPestana(seccion.dataset.tab));
   });
 
   seccion.querySelector('.boton-info-ia')?.addEventListener('click', () => {
@@ -1485,37 +1629,8 @@ function inicializarSeccionServicio(seccion, servicio) {
 
   seccion.querySelector('.campo-imagen-ia')?.addEventListener('change', function () {
     if (this.files[0] && this.files[0].type === 'application/pdf') {
-      mostrarMensaje('La extracción con IA por ahora solo funciona con imágenes. Sube el PDF directo en la pestaña "Documentos".', 'error');
+      mostrarMensaje('La extracción con IA por ahora solo funciona con imágenes. Sube el PDF en la pestaña "Detalles del servicio".', 'error');
       this.value = '';
-    }
-  });
-
-  seccion.querySelector('.form-archivo')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (requiereServicioGuardado(idServicioActual)) return;
-    try {
-      const formData = new FormData(e.target);
-      if (!formData.get('id_tipo_archivo')) {
-        throw new Error('Escribe un tipo de archivo ya registrado (agrégalo en Catálogos de apoyo si no existe).');
-      }
-      await enviarFormData(`/servicios/${idServicioActual}/archivos`, formData);
-      e.target.reset();
-      await cargarArchivos(seccion, idServicioActual);
-      mostrarMensaje('Documento subido', 'exito');
-    } catch (error) {
-      mostrarMensaje(error.message, 'error');
-    }
-  });
-
-  seccion.querySelector('.boton-eliminar-condiciones').addEventListener('click', async () => {
-    if (requiereServicioGuardado(idServicioActual)) return;
-    if (!confirm('¿Eliminar las condiciones de este servicio?')) return;
-    try {
-      await fetch(`/servicios/${idServicioActual}/condiciones`, { method: 'DELETE' });
-      seccion.querySelector('.form-condiciones').reset();
-      mostrarMensaje('Condiciones eliminadas', 'exito');
-    } catch (error) {
-      mostrarMensaje(error.message, 'error');
     }
   });
 

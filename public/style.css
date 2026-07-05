@@ -94,7 +94,7 @@ header button:hover {
 /* --- Layout general --- */
 
 main {
-  max-width: 1000px;
+  max-width: 1500px;
   margin: 1.5rem auto;
   padding: 0 1rem;
 }
@@ -892,4 +892,320 @@ ul li {
   color: #2563eb;
   vertical-align: -4px;
   margin-right: 0.2rem;
+}
+
+/* --- Iconos en las subpestañas de servicio (SVG + texto) --- */
+
+.subpestana-servicio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.subpestana-servicio svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* --- Encabezado de tarjeta: icono en cuadro + titulo + subtitulo --- */
+
+.tarjeta-titulo-icono {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  margin-bottom: 1.1rem;
+}
+
+.tarjeta-titulo-icono h3 {
+  margin: 0 0 0.15rem;
+  color: #101828;
+}
+
+.tarjeta-titulo-icono p {
+  margin: 0;
+}
+
+.icono-encabezado {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 10px;
+  background: #e8f0fe;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.encabezado-detalles {
+  margin-bottom: 1.25rem;
+}
+
+.encabezado-detalles h2 {
+  margin: 0 0 0.2rem;
+}
+
+.encabezado-detalles p {
+  margin: 0;
+}
+
+/* --- Condiciones: label a la izquierda, textarea a la derecha --- */
+
+.campo-condicion {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.campo-condicion > label {
+  margin-top: 0.5rem;
+}
+
+.campo-condicion textarea {
+  margin-bottom: 0;
+  min-height: 70px;
+}
+
+/* --- Incluye / No incluye --- */
+
+.panel-incluye {
+  border: 1px solid #eef0f3;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.titulo-incluye,
+.titulo-no-incluye {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+}
+
+.titulo-incluye {
+  color: #16a34a;
+}
+
+.titulo-no-incluye {
+  color: #dc2626;
+}
+
+.icono-verde {
+  color: #16a34a;
+  display: inline-flex;
+}
+
+.icono-rojo {
+  color: #dc2626;
+  display: inline-flex;
+}
+
+.fila-agregar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.fila-agregar input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.fila-agregar button {
+  white-space: nowrap;
+}
+
+.lista-items li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.2rem;
+  border-bottom: 1px solid #f0f1f4;
+}
+
+.lista-items .item-texto {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* --- Documentos --- */
+
+.documentos-subir {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.documentos-subir-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.documentos-subir-campo > label {
+  margin: 0;
+}
+
+.documentos-subir select {
+  margin-bottom: 0;
+  min-width: 190px;
+}
+
+.elegir-archivo-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 40px;
+}
+
+.boton-elegir-archivo {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.nombre-archivo-elegido {
+  white-space: nowrap;
+}
+
+.documentos-cuerpo {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.tabla-documentos {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla-documentos th {
+  text-align: left;
+  font-size: 0.8rem;
+  color: #667085;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.tabla-documentos td {
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid #f5f6f8;
+  vertical-align: middle;
+}
+
+.celda-archivo {
+  font-weight: 500;
+}
+
+.celda-archivo svg {
+  vertical-align: -5px;
+  margin-right: 0.35rem;
+}
+
+.acciones-documento {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.boton-accion-doc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #eff4ff;
+  color: #2563eb;
+}
+
+.boton-accion-doc:hover {
+  background: #dbe7ff;
+}
+
+@media (max-width: 800px) {
+  .documentos-cuerpo {
+    grid-template-columns: 1fr;
+  }
+  .campo-condicion {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Layout de la pestaña de servicio: panel de portada + contenido --- */
+
+.servicio-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 900px);
+  gap: 1.5rem;
+  align-items: start;
+  justify-content: start;
+}
+
+.panel-portada {
+  /* Desplaza el panel de portada horizontalmente, independiente del resto.
+     Negativo = hacia la izquierda, positivo = hacia la derecha. */
+  --portada-offset-x: -2.5px;
+
+  position: sticky;
+  top: 1rem;
+  transform: translateX(var(--portada-offset-x));
+}
+
+.panel-portada h4 {
+  margin: 0 0 0.6rem;
+  color: #101828;
+}
+
+.panel-portada .preview-lateral {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  background: white;
+  border: 1px solid #eef0f3;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+.panel-portada .preview-lateral img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.panel-portada .preview-lateral .miniatura-placeholder {
+  font-size: 2.6rem;
+  color: #cbd2dc;
+}
+
+.panel-portada p {
+  margin: 0.6rem 0 0;
+}
+
+.servicio-contenido {
+  min-width: 0;
+}
+
+/* En pantallas angostas, la portada pasa arriba y el contenido debajo. */
+@media (max-width: 900px) {
+  .servicio-layout {
+    grid-template-columns: 1fr;
+  }
+  .panel-portada {
+    position: static;
+    max-width: 240px;
+  }
 }

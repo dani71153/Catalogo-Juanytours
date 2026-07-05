@@ -171,7 +171,9 @@ app.get('/servicios/:id', (req, res) => {
 });
 
 app.put('/servicios/:id', (req, res) => {
-  const cambios = servicios.actualizarServicio(req.params.id, req.body);
+  // usar_defectos es un campo del formulario (checkbox), no una columna.
+  const { usar_defectos, ...datosServicio } = req.body;
+  const cambios = servicios.actualizarServicio(req.params.id, datosServicio);
   res.json({ cambios });
 });
 
