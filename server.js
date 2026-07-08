@@ -12,6 +12,7 @@ const incluidos = require('./incluidos.service');
 const archivos = require('./archivos.service');
 const defectos = require('./defectos.service');
 const iaRoutes = require('./integracion-ia/ia.routes');
+const controlTiempoRoutes = require('./control-tiempo/control-tiempo.routes');
 const { query, insert, remove } = require('./db');
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(iaRoutes);
+app.use(controlTiempoRoutes);
 
 // Lista de nombres de paises en español, para el autocompletar de destinos.
 app.get('/paises', (req, res) => {

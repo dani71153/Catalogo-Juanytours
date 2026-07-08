@@ -32,6 +32,12 @@
       </div>
 
       <div id="subvista-servicios" class="subvista activa">
+        <div class="subpestanas-internas">
+          <button type="button" class="subpestana-interna activa" data-subtab-interna="lista">Servicios</button>
+          <button type="button" class="subpestana-interna" data-subtab-interna="calendario">📅 Servicios por calendario</button>
+        </div>
+
+        <div class="subvista-interna activa" data-subtab-interna-contenido="lista">
         <div class="tarjeta">
           <div class="tarjeta-header">
             <h2>Servicios <span class="badge-conteo" id="conteo-servicios">0 servicios</span></h2>
@@ -102,6 +108,28 @@
             </thead>
             <tbody></tbody>
           </table>
+        </div>
+        </div>
+
+        <div class="subvista-interna" data-subtab-interna-contenido="calendario">
+          <div class="tarjeta">
+            <div class="tarjeta-header">
+              <div>
+                <h2>📅 Servicios por calendario</h2>
+                <p class="texto-secundario">Servicios y tarifas según su fecha de fin: vencidos, próximos a vencer y vigentes.</p>
+              </div>
+              <div class="selector-umbral">
+                <label>Próximos en</label>
+                <select id="umbral-vencimiento">
+                  <option value="7">7 días</option>
+                  <option value="30" selected>30 días</option>
+                  <option value="90">90 días</option>
+                </select>
+              </div>
+            </div>
+            <div id="tiles-vencimiento" class="tiles-vencimiento"></div>
+            <div id="lista-calendario" class="lista-calendario"></div>
+          </div>
         </div>
       </div>
 

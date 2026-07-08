@@ -1154,7 +1154,7 @@ ul li {
 .panel-portada {
   /* Desplaza el panel de portada horizontalmente, independiente del resto.
      Negativo = hacia la izquierda, positivo = hacia la derecha. */
-  --portada-offset-x: -2.5px;
+  --portada-offset-x: -px;
 
   position: sticky;
   top: 1rem;
@@ -1208,4 +1208,185 @@ ul li {
     position: static;
     max-width: 240px;
   }
+}
+
+/* --- Subpestañas internas de "Servicios" (estilo pastilla) --- */
+
+.subpestanas-internas {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.subpestana-interna {
+  background: #eef1f5;
+  color: #475467;
+  border: 1px solid #e0e3e8;
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  font-size: 0.88rem;
+}
+
+.subpestana-interna:hover {
+  background: #e2e7ee;
+}
+
+.subpestana-interna.activa {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.subvista-interna {
+  display: none;
+}
+
+.subvista-interna.activa {
+  display: block;
+}
+
+/* --- Servicios por calendario --- */
+
+.selector-umbral {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.selector-umbral label {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.selector-umbral select {
+  margin: 0;
+  min-width: 110px;
+}
+
+.tiles-vencimiento {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.tile-venc {
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+}
+
+.tile-venc .tile-num {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tile-venc.venc-vencido {
+  background: #fef2f2;
+  color: #b42318;
+  border-color: #fecdca;
+}
+
+.tile-venc.venc-hoy {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.tile-venc.venc-proximo {
+  background: #fefce8;
+  color: #a16207;
+  border-color: #fde68a;
+}
+
+.tile-venc.venc-vigente {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.seccion-venc {
+  margin-bottom: 1.25rem;
+}
+
+.titulo-venc {
+  font-size: 0.95rem;
+  margin: 0 0 0.5rem;
+  padding-left: 0.6rem;
+  border-left: 4px solid currentColor;
+}
+
+.titulo-venc.venc-vencido {
+  color: #b42318;
+}
+.titulo-venc.venc-hoy {
+  color: #c2410c;
+}
+.titulo-venc.venc-proximo {
+  color: #a16207;
+}
+.titulo-venc.venc-vigente {
+  color: #15803d;
+}
+
+.lista-venc {
+  padding: 0;
+  margin: 0;
+}
+
+.lista-venc li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid #f0f1f4;
+}
+
+.venc-nombre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge-tipo {
+  display: inline-block;
+  background: #eef1f5;
+  color: #475467;
+  font-size: 0.72rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  margin-right: 0.35rem;
+  text-transform: capitalize;
+}
+
+.venc-fecha {
+  color: #667085;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.venc-estado {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.venc-estado.venc-vencido {
+  color: #b42318;
+}
+.venc-estado.venc-hoy {
+  color: #c2410c;
+}
+.venc-estado.venc-proximo {
+  color: #a16207;
+}
+.venc-estado.venc-vigente {
+  color: #15803d;
 }

@@ -616,6 +616,76 @@ document.querySelectorAll('.subpestana').forEach((boton) => {
   });
 });
 
+// Subpestañas internas de "Servicios": la lista normal y "Servicios por calendario".
+document.querySelectorAll('.subpestana-interna').forEach((boton) => {
+  boton.addEventListener('click', () => {
+    const sub = boton.dataset.subtabInterna;
+    document.querySelectorAll('.subpestana-interna').forEach((b) => b.classList.toggle('activa', b === boton));
+    document
+      .querySelectorAll('.subvista-interna')
+      .forEach((v) => v.classList.toggle('activa', v.dataset.subtabInternaContenido === sub));
+    if (sub === 'calendario') cargarCalendarioVencimientos();
+  });
+});
+
+// --- Servicios por calendario (usa la API de control-tiempo) ---
+
+// Texto legible del vencimiento de un item, a partir de su estado y desglose.
+function textoVencimiento(item) {
+  const d = item.dias_restantes;
+  if (item.estado === 'vencido') return `Venció hace ${Math.abs(d)} día${Math.abs(d) === 1 ? '' : 's'}`;
+  if (item.estado === 'vence_hoy') return 'Vence hoy';
+
+  const g = item.desglose;
+  const partes = [];
+  if (g.anios) partes.push(`${g.anios} año${g.anios === 1 ? '' : 's'}`);
+  if (g.meses) partes.push(`${g.meses} mes${g.meses === 1 ? '' : 'es'}`);
+  if (g.dias) partes.push(`${g.dias} día${g.dias === 1 ? '' : 's'}`);
+  return `Vence en ${partes.join(', ') || '0 días'}`;
+}
+
+function seccionCalendario(titulo, items, claseEstado) {
+  if (!items.length) return '';
+  const filas = items
+    .map(
+      (i) => `
+      <li>
+        <span class="venc-nombre"><span class="badge-tipo">${i.tipo}</span> ${i.nombre}</span>
+        <span class="venc-fecha">${i.fecha_fin}</span>
+        <span class="venc-estado ${claseEstado}">${textoVencimiento(i)}</span>
+      </li>`
+    )
+    .join('');
+  return `<div class="seccion-venc"><h3 class="titulo-venc ${claseEstado}">${titulo} (${items.length})</h3><ul class="lista-venc">${filas}</ul></div>`;
+}
+
+async function cargarCalendarioVencimientos() {
+  const umbral = document.getElementById('umbral-vencimiento').value;
+  try {
+    const data = await obtenerJSON(`/control-tiempo/resumen?umbral=${umbral}`);
+
+    document.getElementById('tiles-vencimiento').innerHTML = `
+      <div class="tile-venc venc-vencido"><span class="tile-num">${data.resumen.vencidos}</span><span>Vencidos</span></div>
+      <div class="tile-venc venc-hoy"><span class="tile-num">${data.resumen.vence_hoy}</span><span>Vence hoy</span></div>
+      <div class="tile-venc venc-proximo"><span class="tile-num">${data.resumen.proximos}</span><span>Próximos (${umbral} d)</span></div>
+      <div class="tile-venc venc-vigente"><span class="tile-num">${data.resumen.vigentes}</span><span>Vigentes</span></div>
+    `;
+
+    const html =
+      seccionCalendario('Vencidos', data.vencidos, 'venc-vencido') +
+      seccionCalendario('Vence hoy', data.venceHoy, 'venc-hoy') +
+      seccionCalendario('Próximos a vencer', data.proximos, 'venc-proximo') +
+      seccionCalendario('Vigentes', data.vigentes, 'venc-vigente');
+
+    document.getElementById('lista-calendario').innerHTML =
+      html || '<p class="texto-secundario">No hay servicios ni tarifas con fecha de fin registrada.</p>';
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  }
+}
+
+document.getElementById('umbral-vencimiento').addEventListener('change', cargarCalendarioVencimientos);
+
 // Subpestañas dentro de "Opciones" (por ahora solo "IA", pero deja espacio
 // para agregar mas configuraciones despues sin rehacer la navegacion).
 document.querySelectorAll('.subpestana-opciones').forEach((boton) => {
